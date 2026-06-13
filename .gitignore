@@ -1,0 +1,11 @@
+node_modules/
+build/
+dist/
+coverage/
+.react-router/
+.sonar/
+.scannerwork/
+.env.sonar
+*.log
+.DS_Store
+.idea/
