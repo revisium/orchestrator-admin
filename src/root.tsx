@@ -1,6 +1,5 @@
 import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router'
 import { ChakraProvider } from '@chakra-ui/react'
-import { ThemeProvider } from 'next-themes'
 import { system } from 'src/shared/ui/theme/theme'
 import { Toaster } from 'src/shared/ui'
 
@@ -16,8 +15,11 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
+  // Theme is hard-forced light with no toggle. Render the light color-mode
+  // markup statically so server and client agree on the first render and
+  // React 19 reports no hydration mismatch on <html>.
   return (
-    <html lang="en">
+    <html lang="en" className="light" style={{ colorScheme: 'light' }}>
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -36,10 +38,8 @@ export function Layout({ children }: LayoutProps) {
 export default function App() {
   return (
     <ChakraProvider value={system}>
-      <ThemeProvider attribute="class" forcedTheme="light" disableTransitionOnChange>
-        <Toaster />
-        <Outlet />
-      </ThemeProvider>
+      <Toaster />
+      <Outlet />
     </ChakraProvider>
   )
 }

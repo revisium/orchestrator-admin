@@ -64,7 +64,16 @@ fetch_response() {
 
 if ! response="$(fetch_response -u "${SONAR_TOKEN}:")"; then
   echo "Retrying Sonar issues API without authentication." >&2
-  response="$(fetch_response)"
+  # A non-200 here (e.g. a brand-new project/PR key not yet analyzed on
+  # SonarCloud, or a transient transport/API failure) is NOT a code-quality
+  # signal. Treat it as non-fatal so it cannot spuriously red the gate; the
+  # SonarCloud quality gate step (qualitygate.wait=true) remains the
+  # authoritative analysis check. Only a successful response with open issues
+  # below is allowed to fail this script.
+  if ! response="$(fetch_response)"; then
+    echo "Warning: Sonar issues API was unreachable or returned a non-200 response; skipping open-issue inspection." >&2
+    exit 0
+  fi
 fi
 
 node -e '

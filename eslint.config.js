@@ -54,10 +54,4 @@ export default [
       '@eslint-react/rules-of-hooks': 'off',
     },
   },
-  {
-    files: ['src/root.tsx'],
-    rules: {
-      '@eslint-react/dom/no-dangerously-set-innerhtml': 'off',
-    },
-  },
 ]
