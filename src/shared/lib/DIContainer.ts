@@ -21,15 +21,19 @@ class DIContainer {
     this.sessionActive = true
   }
 
-  public stopSession(): void {
+  public async stopSession(): Promise<void> {
     this.sessionActive = false
+
+    const pending: Array<void | Promise<void>> = []
 
     for (const registration of this.registrations.values()) {
       if (registration.scope === 'session' && registration.instance) {
-        registration.instance.unmount?.()
+        pending.push(registration.instance.unmount?.())
         registration.instance = undefined
       }
     }
+
+    await Promise.allSettled(pending)
   }
 
   public register<T>(token: new (...args: any[]) => T, factory: Factory<T>, options: { scope: Scope }): void {

@@ -1,29 +1,23 @@
-import { Box, Center, Spinner } from '@chakra-ui/react'
 import { lazy, Suspense } from 'react'
+import { GraphFrame, GraphPlaceholder } from 'src/shared/ui'
 import { useHydrated } from 'src/shared/lib'
 
 const GRAPH_HEIGHT = 320
 
 const RunProgressGraphClient = lazy(() => import('./RunProgressGraph.client'))
 
-const Placeholder = () => (
-  <Center h="full" w="full">
-    <Spinner color="brand.500" />
-  </Center>
-)
-
 export const RunProgressGraph = () => {
   const isHydrated = useHydrated()
 
   return (
-    <Box h={`${GRAPH_HEIGHT}px`} w="full" borderWidth="1px" borderColor="neutral.200" borderRadius="md" bg="neutral.0">
+    <GraphFrame height={GRAPH_HEIGHT}>
       {isHydrated ? (
-        <Suspense fallback={<Placeholder />}>
+        <Suspense fallback={<GraphPlaceholder />}>
           <RunProgressGraphClient />
         </Suspense>
       ) : (
-        <Placeholder />
+        <GraphPlaceholder />
       )}
-    </Box>
+    </GraphFrame>
   )
 }

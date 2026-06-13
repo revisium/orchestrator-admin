@@ -12,15 +12,15 @@ export const globalCss: SystemConfig['globalCss'] = {
     paddingLeft: 'env(safe-area-inset-left)',
     paddingRight: 'env(safe-area-inset-right)',
   },
-  '*': {
-    outline: 'none !important',
-  },
-  '*:focus': {
-    outline: 'none !important',
-    boxShadow: 'none !important',
+  // Accessible, theme-driven keyboard focus. Pointer focus (mouse/touch) stays
+  // quiet via :focus-visible; keyboard users get a visible ring from a token.
+  '*:focus:not(:focus-visible)': {
+    outline: 'none',
   },
   '*:focus-visible': {
-    outline: 'none !important',
-    boxShadow: 'none !important',
+    outline: '2px solid',
+    outlineColor: 'brand.500',
+    outlineOffset: '2px',
+    borderRadius: '2px',
   },
 }

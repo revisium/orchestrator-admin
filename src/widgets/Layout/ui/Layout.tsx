@@ -1,49 +1,57 @@
 import { Box, Flex, HStack, Link as ChakraLink, Text } from '@chakra-ui/react'
-import { Link, Outlet } from 'react-router'
+import { Link, Outlet, useLocation } from 'react-router'
 
-// Only routes that exist render as real links. Not-yet-built destinations stay
-// visible (so the intended IA is legible) but render as disabled, non-link text
-// with a hover title — clicking can no longer hit the ErrorBoundary 404.
 interface NavItem {
   readonly label: string
   readonly to: string
-  readonly disabled?: boolean
+  // Prefix used to mark the active section (e.g. /method matches /method/roles).
+  readonly match: string
 }
 
 const NAV_ITEMS: ReadonlyArray<NavItem> = [
-  { label: 'Dashboard', to: '/' },
-  { label: 'Graph smoke', to: '/runs/graph-smoke' },
-  { label: 'Runs', to: '/runs', disabled: true },
-  { label: 'Inbox', to: '/inbox', disabled: true },
-  { label: 'Method', to: '/method', disabled: true },
+  { label: 'Dashboard', to: '/', match: '/' },
+  { label: 'Runs', to: '/runs', match: '/runs' },
+  { label: 'Inbox', to: '/inbox', match: '/inbox' },
+  { label: 'Method', to: '/method/roles', match: '/method' },
 ]
 
-export const Layout = () => (
-  <Flex direction="column" minH="100dvh" bg="neutral.100">
-    <Box as="header" borderBottomWidth="1px" borderColor="neutral.200" bg="neutral.0">
-      <HStack as="nav" gap="6" px="6" h="14" align="center">
-        {NAV_ITEMS.map((item) =>
-          item.disabled ? (
-            <Text
-              key={item.to}
-              textStyle="medium-sm"
-              color="text.3"
-              cursor="not-allowed"
-              aria-disabled="true"
-              title="Not available yet"
-            >
-              {item.label}
-            </Text>
-          ) : (
-            <ChakraLink key={item.to} asChild textStyle="medium-sm" color="text.2">
-              <Link to={item.to}>{item.label}</Link>
-            </ChakraLink>
-          ),
-        )}
-      </HStack>
-    </Box>
-    <Box as="main" flex="1" p="6">
-      <Outlet />
-    </Box>
-  </Flex>
-)
+const isActive = (pathname: string, match: string): boolean =>
+  match === '/' ? pathname === '/' : pathname === match || pathname.startsWith(`${match}/`)
+
+export const Layout = () => {
+  const { pathname } = useLocation()
+
+  return (
+    <Flex direction="column" minH="100dvh" bg="neutral.100">
+      <Box as="header" borderBottomWidth="1px" borderColor="neutral.200" bg="neutral.0">
+        <HStack as="nav" gap="6" px="6" h="14" align="center">
+          <Text textStyle="semibold-sm" color="brand.500" mr="2">
+            Orchestrator
+          </Text>
+          {NAV_ITEMS.map((item) => {
+            const active = isActive(pathname, item.match)
+            return (
+              <ChakraLink
+                key={item.to}
+                asChild
+                textStyle="medium-sm"
+                color={active ? 'text.1' : 'text.3'}
+                borderBottomWidth="2px"
+                borderColor={active ? 'brand.500' : 'transparent'}
+                h="14"
+                display="flex"
+                alignItems="center"
+                _hover={{ color: 'text.1' }}
+              >
+                <Link to={item.to}>{item.label}</Link>
+              </ChakraLink>
+            )
+          })}
+        </HStack>
+      </Box>
+      <Box as="main" flex="1" p="6">
+        <Outlet />
+      </Box>
+    </Flex>
+  )
+}

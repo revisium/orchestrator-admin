@@ -54,4 +54,12 @@ export default [
       '@eslint-react/rules-of-hooks': 'off',
     },
   },
+  {
+    // Static presentational fixtures and graph layout coordinates are data, not
+    // logic. Literal numbers (token counts, costs, node positions) are expected.
+    files: ['src/shared/fixtures/**/*.ts', '**/*.client.tsx'],
+    rules: {
+      'no-magic-numbers': 'off',
+    },
+  },
 ]

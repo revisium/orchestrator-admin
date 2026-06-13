@@ -1,5 +1,5 @@
 import { Heading, Stack, Text } from '@chakra-ui/react'
-import { RunProgressGraph } from 'src/widgets/RunProgressGraph'
+import { RunProgressGraph } from 'src/features/RunProgressGraph'
 
 export const RunGraphSmokePage = () => (
   <Stack gap="4">

@@ -4,7 +4,7 @@
 
 Run before every handoff, commit, or PR update:
 
-```
+```bash
 npm run verify
 ```
 
