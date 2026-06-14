@@ -1,9 +1,36 @@
-import { Box, Button, Center, chakra, Flex, HStack, Link as ChakraLink, Span, Stack, Text } from '@chakra-ui/react'
-import { ChevronLeft, ChevronRight, Folder, Inbox, LayoutDashboard, List, Scan, type LucideIcon } from 'lucide-react'
+import {
+  Box,
+  Button,
+  Center,
+  chakra,
+  Drawer,
+  Flex,
+  HStack,
+  Link as ChakraLink,
+  Portal,
+  Span,
+  Stack,
+  Text,
+  useDisclosure,
+} from '@chakra-ui/react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  Folder,
+  Inbox,
+  LayoutDashboard,
+  List,
+  type LucideIcon,
+  Menu,
+  Plus,
+  Scan,
+  Search,
+  X,
+} from 'lucide-react'
 import { useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router'
-import { BrandLogo } from 'src/shared/ui'
 import { HOST_STATUS, INBOX_ITEMS } from 'src/shared/fixtures'
+import { BrandLogo } from 'src/shared/ui'
 
 interface NavItem {
   readonly label: string
@@ -32,52 +59,74 @@ const isActive = (pathname: string, match: string): boolean =>
 const SIDEBAR_W = '232px'
 const SIDEBAR_W_COLLAPSED = '64px'
 
-const BrandHeader = ({ collapsed, onToggle }: { readonly collapsed: boolean; readonly onToggle: () => void }) => {
-  const ToggleIcon = collapsed ? ChevronRight : ChevronLeft
-  const toggleLabel = collapsed ? 'Expand sidebar' : 'Collapse sidebar'
-  const toggle = (
-    <chakra.button
-      type="button"
-      display="grid"
-      placeItems="center"
-      boxSize="26px"
-      borderRadius="6px"
-      color="fg.2"
-      cursor="pointer"
-      _hover={{ bg: 'blackAlpha.50', color: 'fg.0' }}
-      onClick={onToggle}
-      title={toggleLabel}
-      aria-label={toggleLabel}
+const IconButton = chakra('button', {
+  base: {
+    display: 'grid',
+    placeItems: 'center',
+    borderRadius: '7px',
+    color: 'fg.2',
+    cursor: 'pointer',
+    transition: 'background 150ms, color 150ms',
+    _hover: { bg: 'blackAlpha.50', color: 'fg.0' },
+  },
+})
+
+const BrandWord = () => (
+  <HStack gap="2.5">
+    <BrandLogo />
+    <Text fontSize="17px" fontWeight="640" letterSpacing="-0.02em" color="fg.0">
+      revo
+    </Text>
+  </HStack>
+)
+
+const Avatar = () => (
+  <Center
+    boxSize="30px"
+    borderRadius="full"
+    bgGradient="to-br"
+    gradientFrom="brand.500"
+    gradientTo="brand.press"
+    color="brand.on"
+    textStyle="semibold-sm"
+    flexShrink="0"
+  >
+    ka
+  </Center>
+)
+
+// Search field — visual only (⌘K). In the topbar at lg+, and inside the drawer on smaller screens.
+const SearchField = (props: { readonly full?: boolean }) => (
+  <HStack
+    h={props.full ? '36px' : '34px'}
+    w={props.full ? 'auto' : undefined}
+    mx={props.full ? '3' : undefined}
+    minW={props.full ? undefined : '168px'}
+    px="2.5"
+    gap="2"
+    borderWidth="1px"
+    borderColor="border.strong"
+    bg="bg.1"
+    borderRadius="btn"
+    color="fg.2"
+    textStyle="regular-sm"
+  >
+    <Search size={16} />
+    <Span flex="1">Search</Span>
+    <Center
+      className="mono"
+      px="1.5"
+      py="0.5"
+      borderRadius="5px"
+      bg="bg.inset"
+      borderWidth="1px"
+      borderColor="border"
+      textStyle="regular-micro"
     >
-      <ToggleIcon size={16} />
-    </chakra.button>
-  )
-
-  if (collapsed) {
-    return (
-      <Stack align="center" gap="2" px="2" pt="4" pb="3">
-        <ChakraLink asChild _hover={{ textDecoration: 'none' }}>
-          <Link to="/">
-            <BrandLogo />
-          </Link>
-        </ChakraLink>
-        {toggle}
-      </Stack>
-    )
-  }
-
-  return (
-    <HStack justify="space-between" px="3.5" pt="4" pb="3">
-      <HStack as={Link} gap="2.5" {...{ to: '/' }} _hover={{ textDecoration: 'none' }}>
-        <BrandLogo />
-        <Text fontSize="17px" fontWeight="640" letterSpacing="-0.02em" color="fg.0">
-          revo
-        </Text>
-      </HStack>
-      {toggle}
-    </HStack>
-  )
-}
+      ⌘K
+    </Center>
+  </HStack>
+)
 
 const navRowColor = (item: NavItem, active: boolean): string => {
   if (item.disabled) return 'fg.3'
@@ -128,10 +177,12 @@ const NavRow = ({
   item,
   active,
   collapsed,
+  onNavigate,
 }: {
   readonly item: NavItem
   readonly active: boolean
   readonly collapsed: boolean
+  readonly onNavigate?: () => void
 }) => {
   const content = <NavRowInner item={item} active={active} collapsed={collapsed} />
 
@@ -162,17 +213,31 @@ const NavRow = ({
       bg={active ? 'brand.soft' : 'transparent'}
       _hover={active ? { textDecoration: 'none' } : { textDecoration: 'none', bg: 'blackAlpha.50', color: 'fg.0' }}
     >
-      <Link to={item.to} title={collapsed ? item.label : undefined}>
+      <Link to={item.to} title={collapsed ? item.label : undefined} onClick={onNavigate}>
         {content}
       </Link>
     </ChakraLink>
   )
 }
 
-const NavRail = ({ pathname, collapsed }: { readonly pathname: string; readonly collapsed: boolean }) => (
+const NavRail = ({
+  pathname,
+  collapsed,
+  onNavigate,
+}: {
+  readonly pathname: string
+  readonly collapsed: boolean
+  readonly onNavigate?: () => void
+}) => (
   <Stack as="nav" gap="0.5" px={collapsed ? '2.5' : '3'} py="2">
     {NAV_ITEMS.map((item) => (
-      <NavRow key={item.to} item={item} active={isActive(pathname, item.match)} collapsed={collapsed} />
+      <NavRow
+        key={item.to}
+        item={item}
+        active={isActive(pathname, item.match)}
+        collapsed={collapsed}
+        onNavigate={onNavigate}
+      />
     ))}
   </Stack>
 )
@@ -226,6 +291,7 @@ const HostPill = ({ collapsed }: { readonly collapsed: boolean }) => {
   )
 }
 
+// Persistent sidebar — desktop only (lg+); on smaller screens it lives in the drawer.
 const Sidebar = ({
   pathname,
   collapsed,
@@ -234,62 +300,175 @@ const Sidebar = ({
   readonly pathname: string
   readonly collapsed: boolean
   readonly onToggle: () => void
-}) => (
-  <Flex
-    as="aside"
-    direction="column"
-    w={collapsed ? SIDEBAR_W_COLLAPSED : SIDEBAR_W}
-    flexShrink="0"
-    bg="bg.sidebar"
-    borderRightWidth="1px"
-    borderColor="border"
-    transition="width 150ms cubic-bezier(.2,0,0,1)"
-  >
-    <BrandHeader collapsed={collapsed} onToggle={onToggle} />
-    <NavRail pathname={pathname} collapsed={collapsed} />
-    <HostPill collapsed={collapsed} />
-  </Flex>
-)
+}) => {
+  const ToggleIcon = collapsed ? ChevronRight : ChevronLeft
+  const toggleLabel = collapsed ? 'Expand sidebar' : 'Collapse sidebar'
+  const toggle = (
+    <IconButton boxSize="26px" onClick={onToggle} title={toggleLabel} aria-label={toggleLabel}>
+      <ToggleIcon size={16} />
+    </IconButton>
+  )
 
-// ⌘K affordance — a non-functional visual search trigger (prototype).
-const CommandAffordance = () => (
-  <HStack
-    h="34px"
-    px="2.5"
-    gap="2"
-    minW="168px"
-    borderWidth="1px"
-    borderColor="border.strong"
-    bg="bg.1"
-    borderRadius="btn"
-    color="fg.2"
-    textStyle="regular-sm"
-  >
-    <Span flex="1">Search</Span>
-    <Center
-      className="mono"
-      px="1.5"
-      py="0.5"
-      borderRadius="5px"
-      bg="bg.inset"
-      borderWidth="1px"
+  return (
+    <Flex
+      as="aside"
+      display={{ base: 'none', lg: 'flex' }}
+      direction="column"
+      w={collapsed ? SIDEBAR_W_COLLAPSED : SIDEBAR_W}
+      flexShrink="0"
+      bg="bg.sidebar"
+      borderRightWidth="1px"
       borderColor="border"
-      textStyle="regular-micro"
+      transition="width 150ms cubic-bezier(.2,0,0,1)"
     >
-      ⌘K
-    </Center>
-  </HStack>
+      {collapsed ? (
+        <Stack align="center" gap="2" px="2" pt="4" pb="3">
+          <ChakraLink asChild _hover={{ textDecoration: 'none' }}>
+            <Link to="/">
+              <BrandLogo />
+            </Link>
+          </ChakraLink>
+          {toggle}
+        </Stack>
+      ) : (
+        <HStack justify="space-between" px="3.5" pt="4" pb="3">
+          <ChakraLink asChild _hover={{ textDecoration: 'none' }}>
+            <Link to="/">
+              <BrandWord />
+            </Link>
+          </ChakraLink>
+          {toggle}
+        </HStack>
+      )}
+      <NavRail pathname={pathname} collapsed={collapsed} />
+      <HostPill collapsed={collapsed} />
+    </Flex>
+  )
+}
+
+// Mobile navigation — the same nav inside an off-canvas drawer (<lg).
+const MobileNavDrawer = ({
+  pathname,
+  open,
+  onClose,
+}: {
+  readonly pathname: string
+  readonly open: boolean
+  readonly onClose: () => void
+}) => (
+  <Drawer.Root
+    open={open}
+    onOpenChange={(e) => {
+      if (!e.open) onClose()
+    }}
+    placement="start"
+  >
+    <Portal>
+      <Drawer.Backdrop />
+      <Drawer.Positioner>
+        <Drawer.Content w={SIDEBAR_W} maxW="80vw" bg="bg.sidebar">
+          <Flex direction="column" h="100%">
+            <HStack justify="space-between" px="3.5" pt="4" pb="3">
+              <ChakraLink asChild _hover={{ textDecoration: 'none' }}>
+                <Link to="/" onClick={onClose}>
+                  <BrandWord />
+                </Link>
+              </ChakraLink>
+              <IconButton boxSize="26px" onClick={onClose} title="Close menu" aria-label="Close menu">
+                <X size={16} />
+              </IconButton>
+            </HStack>
+            <Box pb="1">
+              <SearchField full />
+            </Box>
+            <NavRail pathname={pathname} collapsed={false} onNavigate={onClose} />
+            <Box mt="auto">
+              <ChakraLink
+                asChild
+                display="flex"
+                alignItems="center"
+                gap="2.5"
+                mx="3"
+                mb="1"
+                p="2"
+                borderRadius="9px"
+                _hover={{ bg: 'blackAlpha.50', textDecoration: 'none' }}
+              >
+                <Link to="/" onClick={onClose}>
+                  <Avatar />
+                  <Stack gap="0" minW="0">
+                    <Text textStyle="medium-sm" color="fg.1">
+                      ka
+                    </Text>
+                    <Text textStyle="regular-micro" color="fg.3">
+                      Account
+                    </Text>
+                  </Stack>
+                </Link>
+              </ChakraLink>
+              <HostPill collapsed={false} />
+            </Box>
+          </Flex>
+        </Drawer.Content>
+      </Drawer.Positioner>
+    </Portal>
+  </Drawer.Root>
 )
 
-const TopBar = () => (
+// Mobile-only Inbox shortcut: surfaces the pending-decisions count in the topbar
+// since the sidebar nav badge is hidden inside the drawer on small screens.
+const InboxButton = () => (
+  <ChakraLink
+    asChild
+    display={{ base: 'grid', lg: 'none' }}
+    placeItems="center"
+    position="relative"
+    boxSize="34px"
+    borderRadius="7px"
+    color="fg.2"
+    _hover={{ bg: 'blackAlpha.50', color: 'fg.0', textDecoration: 'none' }}
+  >
+    <Link to="/inbox" title="Inbox" aria-label={`Inbox · ${PENDING_INBOX} pending`}>
+      <Inbox size={18} />
+      {PENDING_INBOX ? (
+        <Center
+          position="absolute"
+          top="-2px"
+          right="-2px"
+          minW="16px"
+          h="16px"
+          px="1"
+          borderRadius="pill"
+          bg="brand.500"
+          color="white"
+          textStyle="semibold-micro"
+          borderWidth="2px"
+          borderColor="bg.1"
+        >
+          {PENDING_INBOX}
+        </Center>
+      ) : null}
+    </Link>
+  </ChakraLink>
+)
+
+// Search lives in the topbar at lg+; on smaller screens it moves into the drawer.
+const CommandAffordance = () => (
+  <Box display={{ base: 'none', lg: 'block' }}>
+    <SearchField />
+  </Box>
+)
+
+const TopBar = ({ onMenuOpen }: { readonly onMenuOpen: () => void }) => (
   <Flex
     as="header"
     h="56px"
     flexShrink="0"
     align="center"
     justify="space-between"
-    pl="6"
-    pr="7"
+    gap="3"
+    pl={{ base: '3', lg: '6' }}
+    pr={{ base: '3', md: '7' }}
     borderBottomWidth="1px"
     borderColor="border"
     bg="bg.1"
@@ -297,41 +476,52 @@ const TopBar = () => (
     top="0"
     zIndex="20"
   >
-    <HStack gap="1.5" textStyle="regular-body" color="fg.2">
-      <ChakraLink asChild color="fg.2" _hover={{ color: 'fg.0', textDecoration: 'none' }}>
-        <Link to="/">revo</Link>
-      </ChakraLink>
-      <Span color="fg.3">/</Span>
-      <Text color="fg.0" fontWeight="560">
-        Control plane
-      </Text>
+    <HStack gap="2" minW="0">
+      <IconButton
+        display={{ base: 'grid', lg: 'none' }}
+        boxSize="34px"
+        onClick={onMenuOpen}
+        title="Open menu"
+        aria-label="Open menu"
+      >
+        <Menu size={18} />
+      </IconButton>
+      <HStack display={{ base: 'none', sm: 'flex' }} gap="1.5" textStyle="regular-body" color="fg.2" minW="0">
+        <ChakraLink asChild color="fg.2" _hover={{ color: 'fg.0', textDecoration: 'none' }}>
+          <Link to="/">revo</Link>
+        </ChakraLink>
+        <Span color="fg.3">/</Span>
+        <Text color="fg.0" fontWeight="560" truncate>
+          Control plane
+        </Text>
+      </HStack>
+      <Box display={{ base: 'flex', sm: 'none' }}>
+        <BrandLogo />
+      </Box>
     </HStack>
-    <HStack gap="3">
+    <HStack gap={{ base: '2', md: '3' }}>
+      <InboxButton />
       <CommandAffordance />
       <Button
         asChild
         size="sm"
         h="34px"
-        px="3.5"
+        px={{ base: '2.5', sm: '3.5' }}
+        gap="1.5"
         bg="brand.500"
         color="brand.on"
         borderRadius="btn"
         _hover={{ bg: 'brand.hover' }}
       >
-        <Link to="/runs/new">+ New run</Link>
+        <Link to="/runs/new">
+          <Plus size={16} />
+          <Span display={{ base: 'none', lg: 'inline' }}>New run</Span>
+        </Link>
       </Button>
-      <Box w="1px" h="26px" bg="border" />
-      <Center
-        boxSize="30px"
-        borderRadius="full"
-        bgGradient="to-br"
-        gradientFrom="brand.500"
-        gradientTo="brand.press"
-        color="brand.on"
-        textStyle="semibold-sm"
-      >
-        ka
-      </Center>
+      <Box display={{ base: 'none', lg: 'block' }} w="1px" h="26px" bg="border" />
+      <Box display={{ base: 'none', lg: 'flex' }}>
+        <Avatar />
+      </Box>
     </HStack>
   </Flex>
 )
@@ -339,14 +529,16 @@ const TopBar = () => (
 export const Layout = () => {
   const { pathname } = useLocation()
   const [collapsed, setCollapsed] = useState(false)
+  const { open, onOpen, onClose } = useDisclosure()
 
   return (
     <Flex h="100dvh" overflow="hidden" bg="bg.0">
       <Sidebar pathname={pathname} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
+      <MobileNavDrawer pathname={pathname} open={open} onClose={onClose} />
       <Flex direction="column" flex="1" minW="0">
-        <TopBar />
+        <TopBar onMenuOpen={onOpen} />
         <Box flex="1" overflowY="auto" overflowX="hidden">
-          <Box maxW="1180px" mx="auto" px="10" pt="7" pb="24">
+          <Box maxW="1180px" mx="auto" px={{ base: '4', md: '6', lg: '10' }} pt={{ base: '5', md: '7' }} pb="24">
             <Outlet />
           </Box>
         </Box>

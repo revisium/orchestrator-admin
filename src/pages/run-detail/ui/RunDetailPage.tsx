@@ -71,42 +71,44 @@ const ProgressTab = () => (
 const AttemptsTab = () => (
   <Stack gap="3">
     <SectionHeading>Attempts</SectionHeading>
-    <Table.Root size="sm" variant="outline">
-      <Table.Header>
-        <Table.Row>
-          <Table.ColumnHeader>Step</Table.ColumnHeader>
-          <Table.ColumnHeader>#</Table.ColumnHeader>
-          <Table.ColumnHeader>Status</Table.ColumnHeader>
-          <Table.ColumnHeader>Model</Table.ColumnHeader>
-          <Table.ColumnHeader>In</Table.ColumnHeader>
-          <Table.ColumnHeader>Out</Table.ColumnHeader>
-          <Table.ColumnHeader>Lesson / error</Table.ColumnHeader>
-          <Table.ColumnHeader>Cost</Table.ColumnHeader>
-        </Table.Row>
-      </Table.Header>
-      <Table.Body>
-        {RUN_ATTEMPTS.map((attempt) => (
-          <Table.Row key={attempt.id}>
-            <Table.Cell>{attempt.stepLabel}</Table.Cell>
-            <Table.Cell>{attempt.attemptNo}</Table.Cell>
-            <Table.Cell>
-              <StatusBadge status={attempt.status} />
-            </Table.Cell>
-            <Table.Cell>{attempt.modelProfile}</Table.Cell>
-            <Table.Cell>{attempt.inputTokens.toLocaleString()}</Table.Cell>
-            <Table.Cell>{attempt.outputTokens.toLocaleString()}</Table.Cell>
-            <Table.Cell>
-              <Text textStyle="regular-xs" color={attempt.error ? 'status.failed.fg' : 'text.3'}>
-                {attempt.error ?? attempt.lesson ?? '—'}
-              </Text>
-            </Table.Cell>
-            <Table.Cell>
-              {attempt.costAmount.toFixed(COST_DECIMALS)} {attempt.currency}
-            </Table.Cell>
+    <Box overflowX="auto">
+      <Table.Root size="sm" variant="outline" minW="640px">
+        <Table.Header>
+          <Table.Row>
+            <Table.ColumnHeader>Step</Table.ColumnHeader>
+            <Table.ColumnHeader>#</Table.ColumnHeader>
+            <Table.ColumnHeader>Status</Table.ColumnHeader>
+            <Table.ColumnHeader>Model</Table.ColumnHeader>
+            <Table.ColumnHeader>In</Table.ColumnHeader>
+            <Table.ColumnHeader>Out</Table.ColumnHeader>
+            <Table.ColumnHeader>Lesson / error</Table.ColumnHeader>
+            <Table.ColumnHeader>Cost</Table.ColumnHeader>
           </Table.Row>
-        ))}
-      </Table.Body>
-    </Table.Root>
+        </Table.Header>
+        <Table.Body>
+          {RUN_ATTEMPTS.map((attempt) => (
+            <Table.Row key={attempt.id}>
+              <Table.Cell>{attempt.stepLabel}</Table.Cell>
+              <Table.Cell>{attempt.attemptNo}</Table.Cell>
+              <Table.Cell>
+                <StatusBadge status={attempt.status} />
+              </Table.Cell>
+              <Table.Cell>{attempt.modelProfile}</Table.Cell>
+              <Table.Cell>{attempt.inputTokens.toLocaleString()}</Table.Cell>
+              <Table.Cell>{attempt.outputTokens.toLocaleString()}</Table.Cell>
+              <Table.Cell>
+                <Text textStyle="regular-xs" color={attempt.error ? 'status.failed.fg' : 'text.3'}>
+                  {attempt.error ?? attempt.lesson ?? '—'}
+                </Text>
+              </Table.Cell>
+              <Table.Cell>
+                {attempt.costAmount.toFixed(COST_DECIMALS)} {attempt.currency}
+              </Table.Cell>
+            </Table.Row>
+          ))}
+        </Table.Body>
+      </Table.Root>
+    </Box>
   </Stack>
 )
 
@@ -144,7 +146,7 @@ export const RunDetailPage = ({ runId }: RunDetailPageProps) => {
       <RunDetailHeader run={run} />
       <Card>
         <Tabs.Root defaultValue="timeline" variant="line">
-          <Tabs.List>
+          <Tabs.List overflowX="auto" css={{ '& > *': { flexShrink: 0 }, scrollbarWidth: 'none' }}>
             <Tabs.Trigger value="timeline">Timeline</Tabs.Trigger>
             <Tabs.Trigger value="progress">Progress</Tabs.Trigger>
             <Tabs.Trigger value="attempts">Attempts</Tabs.Trigger>
