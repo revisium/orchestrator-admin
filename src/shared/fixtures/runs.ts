@@ -1,4 +1,4 @@
-import type { Attempt, CostRow, RunEvent, StepNode, TaskRun } from './types'
+import type { Attempt, CostRow, RunEvent, RunStatus, StepNode, TaskRun } from './types'
 
 export const TASK_RUNS: ReadonlyArray<TaskRun> = [
   {
@@ -82,6 +82,20 @@ export const TASK_RUNS: ReadonlyArray<TaskRun> = [
 ]
 
 export const runById = (runId: string): TaskRun => TASK_RUNS.find((run) => run.id === runId) ?? TASK_RUNS[0]
+
+export interface RunFilter {
+  readonly id: 'all' | RunStatus
+  readonly label: string
+}
+
+// Segmented status filters for the Runs board (counts are derived from runs).
+export const RUN_FILTERS: ReadonlyArray<RunFilter> = [
+  { id: 'all', label: 'All' },
+  { id: 'running', label: 'Running' },
+  { id: 'awaiting_approval', label: 'Awaiting' },
+  { id: 'completed', label: 'Completed' },
+  { id: 'failed', label: 'Failed' },
+]
 
 export const RUN_EVENTS: ReadonlyArray<RunEvent> = [
   {

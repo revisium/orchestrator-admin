@@ -6,7 +6,7 @@ import { PageHeader, SectionHeading } from 'src/shared/ui'
 import { DecideCallout } from './DecideCallout'
 import { HostStatusCard } from './HostStatusCard'
 import { MiniQueue } from './MiniQueue'
-import { RecentRunRow } from './RecentRunRow'
+import { RunRow } from 'src/entities/run'
 import { StatCard, type StatDef } from './StatCard'
 
 const STAT_DEFS: ReadonlyArray<StatDef> = [
@@ -103,7 +103,7 @@ export const DashboardPage = () => (
           overflow="hidden"
         >
           {RECENT_RUNS.map((run) => (
-            <RecentRunRow key={run.id} run={run} />
+            <RunRow key={run.id} run={run} variant="recent" />
           ))}
         </Box>
       </Stack>
