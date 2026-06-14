@@ -95,11 +95,40 @@ export interface GateOption {
   readonly label: string
 }
 
+export interface AdrSummary {
+  readonly title: string
+  readonly decision: string
+  readonly bullets: ReadonlyArray<string>
+}
+
+export interface DiffFile {
+  readonly path: string
+  readonly add: number
+  readonly del: number
+}
+
+export interface DiffSummary {
+  readonly branch: string
+  readonly additions: number
+  readonly deletions: number
+  readonly files: ReadonlyArray<DiffFile>
+  readonly checks: ReadonlyArray<string>
+}
+
+export interface BudgetSummary {
+  readonly spent: number
+  readonly limit: number
+  readonly estimate: number
+}
+
 export interface InboxItemDetail extends InboxItem {
   readonly gateType: 'plan_gate' | 'merge_gate' | 'answer_question'
   readonly contextSummary: string
   readonly options: ReadonlyArray<GateOption>
   readonly riskSummary: ReadonlyArray<{ readonly level: 'low' | 'medium' | 'high'; readonly note: string }>
+  readonly adr?: AdrSummary
+  readonly diff?: DiffSummary
+  readonly budget?: BudgetSummary
 }
 
 export interface RoleRow {

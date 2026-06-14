@@ -57,6 +57,16 @@ const ITEM_DETAILS: Record<string, InboxItemDetail> = {
       { level: 'medium', note: 'Touches CI release path; a bad bump could publish an unintended version.' },
       { level: 'low', note: 'Changes are additive; no runtime code paths modified.' },
     ],
+    adr: {
+      title: 'Release-train workflow for orchestrator-admin',
+      decision: 'Adopt a semantic-release GitHub Actions train with a gated dry-run on main before tagging.',
+      bullets: [
+        'Version bumps and changelog generated from Conventional Commits',
+        'Dry-run job validates the release on main before any tag is pushed',
+        'No runtime code paths touched — CI / release surface only',
+      ],
+    },
+    budget: { spent: 0.93, limit: 5, estimate: 1.2 },
   },
   ibx_merge_01: {
     ...INBOX_ITEMS[1],
@@ -71,6 +81,20 @@ const ITEM_DETAILS: Record<string, InboxItemDetail> = {
       { level: 'high', note: 'Modifies worker restart path; regression would affect durable execution.' },
       { level: 'medium', note: 'New integration test covers the happy path only.' },
     ],
+    diff: {
+      branch: 'feat/dbos-recovery',
+      additions: 312,
+      deletions: 47,
+      files: [
+        { path: 'src/worker/recovery.ts', add: 118, del: 12 },
+        { path: 'src/worker/loop.ts', add: 46, del: 21 },
+        { path: 'test/recovery.int.test.ts', add: 96, del: 0 },
+        { path: 'src/host/lifecycle.ts', add: 28, del: 9 },
+        { path: 'src/host/dbos.module.ts', add: 18, del: 5 },
+        { path: 'docs/adr/0002-dbos-recovery.md', add: 6, del: 0 },
+      ],
+      checks: ['CI · verify', 'SonarCloud quality gate', 'reviewer approved'],
+    },
   },
   ibx_q_01: {
     ...INBOX_ITEMS[2],

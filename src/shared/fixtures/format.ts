@@ -22,3 +22,10 @@ export const relTime = (iso: string): string => {
 export const formatUsd = (amount: number): string => `$${amount.toFixed(2)}`
 
 export const initials = (name: string): string => (name === 'orchestrator' ? 'sys' : name.slice(0, 2))
+
+// Proportional add/del split for a diff file bar (percentages; literals kept here
+// out of the magic-number-strict app code).
+export const diffBar = (add: number, del: number): { readonly addPct: number; readonly delPct: number } => {
+  const total = add + del || 1
+  return { addPct: (add / total) * 100, delPct: (del / total) * 100 }
+}
