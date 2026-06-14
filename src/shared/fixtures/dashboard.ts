@@ -6,6 +6,7 @@ export interface HostStatus {
   readonly dbosConnected: boolean
   readonly controlPlane: string
   readonly playbookVersion: string
+  readonly uptime: string
 }
 
 export const HOST_STATUS: HostStatus = {
@@ -14,6 +15,7 @@ export const HOST_STATUS: HostStatus = {
   dbosConnected: true,
   controlPlane: 'admin/control-plane/master',
   playbookVersion: '@revisium/playbook-core 1.4.2',
+  uptime: '4d 06h',
 }
 
 // Ordered status buckets for the dashboard summary strip; counts model
