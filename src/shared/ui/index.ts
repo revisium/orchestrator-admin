@@ -1,4 +1,5 @@
 export { Toaster, toaster } from './Toaster'
+export { BrandLogo } from './BrandLogo'
 export { StatusBadge } from './StatusBadge'
 export { AccentBadge } from './AccentBadge'
 export { Card } from './Card'
