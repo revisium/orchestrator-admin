@@ -66,7 +66,7 @@ const ITEM_DETAILS: Record<string, InboxItemDetail> = {
         'No runtime code paths touched — CI / release surface only',
       ],
     },
-    budget: { spent: 0.93, limit: 5.0, estimate: 1.2 },
+    budget: { spent: 0.93, limit: 5, estimate: 1.2 },
   },
   ibx_merge_01: {
     ...INBOX_ITEMS[1],

@@ -5,7 +5,7 @@ import { INBOX_ITEMS, inboxItemById } from 'src/shared/fixtures'
 import { InboxList } from 'src/features/InboxList'
 import { GateResolutionPanel } from 'src/features/GateResolutionPanel'
 
-const PENDING = INBOX_ITEMS.filter((item) => item.status === 'pending')
+const FIRST_PENDING = INBOX_ITEMS.find((item) => item.status === 'pending')
 
 const DetailCard = ({ children }: { readonly children: React.ReactNode }) => (
   <Box
@@ -42,7 +42,7 @@ const ResolvedPlaceholder = ({ runId }: { readonly runId?: string }) => (
 )
 
 export const InboxView = ({ selectedId }: { readonly selectedId?: string }) => {
-  const effectiveId = selectedId ?? PENDING[0]?.id
+  const effectiveId = selectedId ?? FIRST_PENDING?.id
   const selected = effectiveId ? INBOX_ITEMS.find((item) => item.id === effectiveId) : undefined
   const resolved = selected?.status === 'resolved'
 
@@ -74,7 +74,7 @@ export const InboxView = ({ selectedId }: { readonly selectedId?: string }) => {
           {!selected || resolved ? (
             <ResolvedPlaceholder runId={selected?.runId} />
           ) : (
-            <GateResolutionPanel item={inboxItemById(effectiveId)} />
+            <GateResolutionPanel item={inboxItemById(selected.id)} />
           )}
         </DetailCard>
       </Stack>
