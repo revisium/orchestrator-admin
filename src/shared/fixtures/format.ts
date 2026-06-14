@@ -20,3 +20,5 @@ export const relTime = (iso: string): string => {
 }
 
 export const formatUsd = (amount: number): string => `$${amount.toFixed(2)}`
+
+export const initials = (name: string): string => (name === 'orchestrator' ? 'sys' : name.slice(0, 2))
