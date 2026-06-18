@@ -4,6 +4,7 @@ export type {
   TaskRun,
   RunEvent,
   StepNode,
+  RunDetailStep,
   Attempt,
   CostRow,
   InboxKind,
@@ -19,9 +20,23 @@ export type {
   PipelineRow,
   PlaybookRow,
 } from './types'
-export { TASK_RUNS, runById, RUN_EVENTS, RUN_STEPS, RUN_ATTEMPTS, RUN_COSTS } from './runs'
+export {
+  TASK_RUNS,
+  runById,
+  RUN_EVENTS,
+  RUN_EVENTS_DESC,
+  RUN_STEPS,
+  RUN_ATTEMPTS,
+  RUN_COSTS,
+  RUN_BUDGET,
+  RUN_COST_TOTALS,
+  RUN_DETAIL_TABS,
+  runDetailSteps,
+  currentRunStep,
+  latestAttempt,
+} from './runs'
 export { INBOX_ITEMS, inboxItemById, PENDING_INBOX, PENDING_QUEUE } from './inbox'
 export { ROLES, roleById, PIPELINES, pipelineById, PLAYBOOKS, playbookRouteRoles } from './method'
 export { HOST_STATUS, RUN_STATUS_COUNTS, RECENT_RUNS, statusCount, type HostStatus } from './dashboard'
-export { relTime, formatUsd, initials, diffBar } from './format'
+export { relTime, formatUsd, formatRunCost, formatTokens, absTime, initials, diffBar, costShare } from './format'
 export { RUN_FILTERS, type RunFilter } from './runs'

@@ -1,4 +1,4 @@
-import type { Attempt, CostRow, RunEvent, RunStatus, StepNode, TaskRun } from './types'
+import type { Attempt, BudgetSummary, CostRow, RunDetailStep, RunEvent, RunStatus, StepNode, TaskRun } from './types'
 
 export const TASK_RUNS: ReadonlyArray<TaskRun> = [
   {
@@ -142,6 +142,8 @@ export const RUN_EVENTS: ReadonlyArray<RunEvent> = [
   },
 ]
 
+export const RUN_EVENTS_DESC: ReadonlyArray<RunEvent> = [...RUN_EVENTS].reverse()
+
 export const RUN_STEPS: ReadonlyArray<StepNode> = [
   { id: 'architect', role: 'architect', kind: 'role', status: 'succeeded', label: 'Architect' },
   { id: 'plan_gate', role: 'plan-gate', kind: 'gate', status: 'succeeded', label: 'Plan gate' },
@@ -202,3 +204,67 @@ export const RUN_COSTS: ReadonlyArray<CostRow> = RUN_ATTEMPTS.map((attempt) => (
   costAmount: attempt.costAmount,
   currency: attempt.currency,
 }))
+
+export const RUN_BUDGET: BudgetSummary = { spent: 0.93, limit: 4, estimate: 0.7 }
+
+export const RUN_COST_TOTALS = {
+  attempts: RUN_COSTS.length,
+  inputTokens: RUN_COSTS.reduce((sum, row) => sum + row.inputTokens, 0),
+  outputTokens: RUN_COSTS.reduce((sum, row) => sum + row.outputTokens, 0),
+  amount: RUN_COSTS.reduce((sum, row) => sum + row.costAmount, 0),
+  maxAmount: Math.max(...RUN_COSTS.map((row) => row.costAmount)),
+}
+
+export const RUN_DETAIL_TABS = [
+  { id: 'pipeline', label: 'Pipeline' },
+  { id: 'attempts', label: 'Attempts', count: RUN_ATTEMPTS.length },
+  { id: 'cost', label: 'Cost' },
+] as const
+
+const PIPELINE_STEPS: ReadonlyArray<Omit<RunDetailStep, 'status' | 'current'>> = [
+  { id: 'architect', role: 'architect', kind: 'role', label: 'Architect', meta: 'deep' },
+  { id: 'plan_gate', role: 'plan-gate', kind: 'gate', label: 'Plan gate', meta: 'human' },
+  { id: 'developer', role: 'developer', kind: 'role', label: 'Developer', meta: 'standard' },
+  { id: 'reviewer', role: 'reviewer', kind: 'role', label: 'Reviewer', meta: 'deep' },
+  { id: 'merge_gate', role: 'merge-gate', kind: 'gate', label: 'Merge gate', meta: 'human' },
+  { id: 'integrator', role: 'integrator', kind: 'role', label: 'Integrator', meta: 'standard' },
+]
+
+const statusForIndex = (run: TaskRun, index: number, done: number): StepNode['status'] => {
+  if (run.status === 'completed') return 'succeeded'
+  if (run.status === 'cancelled') return index <= done ? 'succeeded' : 'skipped'
+  if (index < done) return 'succeeded'
+  if (index > done) return 'pending'
+  if (run.status === 'failed') return 'failed'
+  if (run.status === 'awaiting_approval' || run.status === 'paused') return 'awaiting_approval'
+  if (run.status === 'running' || run.status === 'planning') return 'running'
+  return 'pending'
+}
+
+export const runDetailSteps = (run: TaskRun): ReadonlyArray<RunDetailStep> => {
+  if (run.id === 'run_8f2a') {
+    const statuses = Object.fromEntries(RUN_STEPS.map((step) => [step.id, step.status]))
+    return PIPELINE_STEPS.map((step) => ({
+      ...step,
+      status: statuses[step.id] ?? 'pending',
+      current: step.id === 'developer',
+    }))
+  }
+
+  const done = Math.round((run.progress.done / run.progress.total) * PIPELINE_STEPS.length)
+  return PIPELINE_STEPS.map((step, index) => {
+    const status = statusForIndex(run, index, done)
+    return {
+      ...step,
+      status,
+      current: index === done && (run.status === 'running' || run.status === 'planning'),
+    }
+  })
+}
+
+export const currentRunStep = (steps: ReadonlyArray<RunDetailStep>): RunDetailStep | undefined =>
+  steps.find((step) => step.current) ??
+  steps.find((step) => step.status === 'awaiting_approval') ??
+  steps.find((step) => step.status === 'running')
+
+export const latestAttempt = (): Attempt => RUN_ATTEMPTS.at(-1) ?? RUN_ATTEMPTS[0]

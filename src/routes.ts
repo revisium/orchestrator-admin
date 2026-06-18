@@ -3,10 +3,12 @@ import { type RouteConfig, index, layout, route } from '@react-router/dev/routes
 export default [
   layout('routes/AppLayout.tsx', [
     index('routes/Home.tsx'),
-    route('/runs', 'routes/RunsBoard.tsx'),
-    route('/runs/new', 'routes/RunCreate.tsx'),
-    route('/runs/graph-smoke', 'routes/RunGraphSmoke.tsx'),
-    route('/runs/:runId', 'routes/RunDetail.tsx'),
+    route('/runs', 'routes/RunsLayout.tsx', [
+      index('routes/RunsBoard.tsx'),
+      route('new', 'routes/RunCreate.tsx'),
+      route('graph-smoke', 'routes/RunGraphSmoke.tsx'),
+      route(':runId', 'routes/RunDetail.tsx'),
+    ]),
     route('/inbox', 'routes/Inbox.tsx'),
     route('/inbox/:itemId', 'routes/InboxItem.tsx'),
     route('/method/roles', 'routes/MethodRoles.tsx'),

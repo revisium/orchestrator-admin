@@ -56,6 +56,14 @@ const NAV_ITEMS: ReadonlyArray<NavItem> = [
 const isActive = (pathname: string, match: string): boolean =>
   match === '/' ? pathname === '/' : pathname === match || pathname.startsWith(`${match}/`)
 
+const crumbForPath = (pathname: string): string => {
+  if (pathname.startsWith('/runs')) return 'Runs'
+  if (pathname.startsWith('/inbox')) return 'Inbox'
+  if (pathname.startsWith('/method')) return 'Method'
+  if (pathname.startsWith('/projects')) return 'Projects'
+  return 'Control plane'
+}
+
 const SIDEBAR_W = '232px'
 const SIDEBAR_W_COLLAPSED = '64px'
 
@@ -459,7 +467,7 @@ const CommandAffordance = () => (
   </Box>
 )
 
-const TopBar = ({ onMenuOpen }: { readonly onMenuOpen: () => void }) => (
+const TopBar = ({ pathname, onMenuOpen }: { readonly pathname: string; readonly onMenuOpen: () => void }) => (
   <Flex
     as="header"
     h="56px"
@@ -486,13 +494,15 @@ const TopBar = ({ onMenuOpen }: { readonly onMenuOpen: () => void }) => (
       >
         <Menu size={18} />
       </IconButton>
-      <HStack display={{ base: 'none', sm: 'flex' }} gap="1.5" textStyle="regular-body" color="fg.2" minW="0">
+      <HStack display={{ base: 'none', sm: 'flex' }} gap="4" textStyle="regular-body" color="fg.2" minW="0">
         <ChakraLink asChild color="fg.2" _hover={{ color: 'fg.0', textDecoration: 'none' }}>
           <Link to="/">revo</Link>
         </ChakraLink>
-        <Span color="fg.3">/</Span>
+        <Box color="fg.3" display="inline-flex" flexShrink="0">
+          <ChevronRight size={18} />
+        </Box>
         <Text color="fg.0" fontWeight="560" truncate>
-          Control plane
+          {crumbForPath(pathname)}
         </Text>
       </HStack>
       <Box display={{ base: 'flex', sm: 'none' }}>
@@ -536,7 +546,7 @@ export const Layout = () => {
       <Sidebar pathname={pathname} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
       <MobileNavDrawer pathname={pathname} open={open} onClose={onClose} />
       <Flex direction="column" flex="1" minW="0">
-        <TopBar onMenuOpen={onOpen} />
+        <TopBar pathname={pathname} onMenuOpen={onOpen} />
         <Box flex="1" overflowY="auto" overflowX="hidden">
           <Box maxW="1180px" mx="auto" px={{ base: '4', md: '6', lg: '10' }} pt={{ base: '5', md: '7' }} pb="24">
             <Outlet />

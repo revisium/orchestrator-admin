@@ -21,6 +21,22 @@ export const relTime = (iso: string): string => {
 
 export const formatUsd = (amount: number): string => `$${amount.toFixed(2)}`
 
+export const formatRunCost = (amount: number): string => `$${amount.toFixed(3)}`
+
+export const formatTokens = (count: number): string => {
+  if (count < 1000) return count.toLocaleString()
+  return `${(count / 1000).toFixed(1)}k`
+}
+
+export const absTime = (iso: string): string =>
+  new Intl.DateTimeFormat('en', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'UTC',
+  }).format(new Date(iso))
+
 export const initials = (name: string): string => (name === 'orchestrator' ? 'sys' : name.slice(0, 2))
 
 // Proportional add/del split for a diff file bar (percentages; literals kept here
@@ -29,3 +45,5 @@ export const diffBar = (add: number, del: number): { readonly addPct: number; re
   const total = add + del || 1
   return { addPct: (add / total) * 100, delPct: (del / total) * 100 }
 }
+
+export const costShare = (amount: number, max: number): string => `${(amount / max) * 100}%`

@@ -54,6 +54,11 @@ export interface StepNode {
   readonly label: string
 }
 
+export interface RunDetailStep extends StepNode {
+  readonly meta: string
+  readonly current: boolean
+}
+
 export interface Attempt {
   readonly id: string
   readonly stepLabel: string
