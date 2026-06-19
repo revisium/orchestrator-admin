@@ -10,6 +10,8 @@ export default [
       route(':runId', 'routes/RunDetail.tsx'),
     ]),
     route('/projects', 'routes/Projects.tsx'),
+    route('/projects/:projectId', 'routes/ProjectDetail.tsx'),
+    route('/projects/:projectId/:tab', 'routes/ProjectDetailTab.tsx'),
     route('/inbox', 'routes/Inbox.tsx'),
     route('/inbox/:itemId', 'routes/InboxItem.tsx'),
     route('/method/roles', 'routes/MethodRoles.tsx'),

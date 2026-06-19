@@ -41,7 +41,7 @@ export {
 } from './runs'
 export { INBOX_ITEMS, inboxItemById, PENDING_INBOX, PENDING_QUEUE } from './inbox'
 export { ROLES, roleById, PIPELINES, pipelineById, PLAYBOOKS, playbookRouteRoles } from './method'
-export { PROJECTS, PROJECT_REPOSITORIES, reposForProject } from './projects'
+export { PROJECTS, PROJECT_REPOSITORIES, RUN_PROJECT, projectById, reposForProject, runsForProject } from './projects'
 export { HOST_STATUS, RUN_STATUS_COUNTS, RECENT_RUNS, statusCount, type HostStatus } from './dashboard'
 export { relTime, formatUsd, formatRunCost, formatTokens, absTime, initials, diffBar, costShare } from './format'
 export { RUN_FILTERS, type RunFilter } from './runs'

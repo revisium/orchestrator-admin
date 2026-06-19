@@ -1,4 +1,5 @@
-import type { ProjectRepository, ProjectRow } from './types'
+import { TASK_RUNS } from './runs'
+import type { ProjectRepository, ProjectRow, TaskRun } from './types'
 
 export const PROJECTS: ReadonlyArray<ProjectRow> = [
   {
@@ -134,3 +135,18 @@ export const PROJECT_REPOSITORIES: ReadonlyArray<ProjectRepository> = [
 
 export const reposForProject = (projectId: string): ReadonlyArray<ProjectRepository> =>
   PROJECT_REPOSITORIES.filter((repo) => repo.projectId === projectId)
+
+export const projectById = (projectId: string): ProjectRow =>
+  PROJECTS.find((project) => project.id === projectId) ?? PROJECTS[0]
+
+export const RUN_PROJECT: Record<string, string> = {
+  run_8f2a: 'prj_orch',
+  run_4c71: 'prj_orch',
+  run_0f12: 'prj_orch',
+  run_1d09: 'prj_schema',
+  run_a35e: 'prj_schema',
+  run_6b88: 'prj_strategy',
+}
+
+export const runsForProject = (projectId: string): ReadonlyArray<TaskRun> =>
+  TASK_RUNS.filter((run) => RUN_PROJECT[run.id] === projectId)
