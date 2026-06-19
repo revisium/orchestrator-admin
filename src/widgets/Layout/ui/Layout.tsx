@@ -34,7 +34,7 @@ import {
 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, Outlet, useLocation } from 'react-router'
-import { HOST_STATUS, INBOX_ITEMS } from 'src/shared/fixtures'
+import { HOST_STATUS, INBOX_ITEMS, projectById } from 'src/shared/fixtures'
 import { BrandLogo } from 'src/shared/ui'
 
 interface NavItem {
@@ -48,7 +48,15 @@ interface NavItem {
   readonly disabled?: boolean
 }
 
+interface BreadcrumbItem {
+  readonly label: string
+  readonly to?: string
+}
+
 const PENDING_INBOX = INBOX_ITEMS.filter((item) => item.status === 'pending').length
+const PATH_SECTION_INDEX = 0
+const PROJECT_ID_INDEX = 1
+const PROJECT_TAB_INDEX = 2
 
 const NAV_ITEMS: ReadonlyArray<NavItem> = [
   { label: 'Dashboard', to: '/', match: '/', icon: LayoutDashboard },
@@ -67,12 +75,44 @@ const PROJECT_ITEMS = [
 const isActive = (pathname: string, match: string): boolean =>
   match === '/' ? pathname === '/' : pathname === match || pathname.startsWith(`${match}/`)
 
-const crumbForPath = (pathname: string): string => {
-  if (pathname.startsWith('/runs')) return 'Runs'
-  if (pathname.startsWith('/inbox')) return 'Inbox'
-  if (pathname.startsWith('/method')) return 'Method'
-  if (pathname.startsWith('/projects')) return 'Projects'
-  return 'Control plane'
+const PROJECT_TAB_LABELS: Readonly<Record<string, string>> = {
+  repositories: 'Repositories',
+  knowledge: 'Knowledge base',
+  adrs: 'ADRs',
+  memory: 'Memory',
+  activity: 'Activity',
+}
+
+const breadcrumbsForPath = (pathname: string): ReadonlyArray<BreadcrumbItem> => {
+  const segments = pathname.split('/').filter(Boolean)
+  const section = segments[PATH_SECTION_INDEX]
+
+  if (section === 'runs') {
+    if (segments[PROJECT_ID_INDEX] === 'new') return [{ label: 'Runs', to: '/runs' }, { label: 'New run' }]
+    return [{ label: 'Runs' }]
+  }
+
+  if (section === 'inbox') return [{ label: 'Inbox' }]
+  if (section === 'method') return [{ label: 'Method' }]
+
+  if (section === 'projects') {
+    const projectId = segments[PROJECT_ID_INDEX]
+    const tab = segments[PROJECT_TAB_INDEX]
+
+    if (!projectId) return [{ label: 'Projects' }]
+
+    const project = projectById(projectId)
+    const crumbs: Array<BreadcrumbItem> = [
+      { label: 'Projects', to: '/projects' },
+      { label: project.name, to: `/projects/${project.id}` },
+    ]
+
+    if (tab) crumbs.push({ label: PROJECT_TAB_LABELS[tab] ?? tab })
+
+    return crumbs
+  }
+
+  return [{ label: 'Control plane' }]
 }
 
 const SIDEBAR_W = '232px'
@@ -688,74 +728,96 @@ const CommandAffordance = () => (
   </Box>
 )
 
-const TopBar = ({ pathname, onMenuOpen }: { readonly pathname: string; readonly onMenuOpen: () => void }) => (
-  <Flex
-    as="header"
-    h="56px"
-    flexShrink="0"
-    align="center"
-    justify="space-between"
-    gap="3"
-    pl={{ base: '3', lg: '6' }}
-    pr={{ base: '3', md: '7' }}
-    borderBottomWidth="1px"
-    borderColor="border"
-    bg="bg.1"
-    position="sticky"
-    top="0"
-    zIndex="20"
-  >
-    <HStack gap="2" minW="0">
-      <IconButton
-        display={{ base: 'grid', lg: 'none' }}
-        boxSize="34px"
-        onClick={onMenuOpen}
-        title="Open menu"
-        aria-label="Open menu"
-      >
-        <MenuIcon size={18} />
-      </IconButton>
-      <HStack display={{ base: 'none', sm: 'flex' }} gap="4" textStyle="regular-body" color="fg.2" minW="0">
-        <ChakraLink asChild color="fg.2" _hover={{ color: 'fg.0', textDecoration: 'none' }}>
-          <Link to="/">revo</Link>
-        </ChakraLink>
-        <Box color="fg.3" display="inline-flex" flexShrink="0">
-          <ChevronRight size={18} />
+const TopBar = ({ pathname, onMenuOpen }: { readonly pathname: string; readonly onMenuOpen: () => void }) => {
+  const breadcrumbs = breadcrumbsForPath(pathname)
+
+  return (
+    <Flex
+      as="header"
+      h="56px"
+      flexShrink="0"
+      align="center"
+      justify="space-between"
+      gap="3"
+      pl={{ base: '3', lg: '6' }}
+      pr={{ base: '3', md: '7' }}
+      borderBottomWidth="1px"
+      borderColor="border"
+      bg="bg.1"
+      position="sticky"
+      top="0"
+      zIndex="20"
+    >
+      <HStack gap="2" minW="0">
+        <IconButton
+          display={{ base: 'grid', lg: 'none' }}
+          boxSize="34px"
+          onClick={onMenuOpen}
+          title="Open menu"
+          aria-label="Open menu"
+        >
+          <MenuIcon size={18} />
+        </IconButton>
+        <HStack
+          as="nav"
+          aria-label="Breadcrumb"
+          display={{ base: 'none', sm: 'flex' }}
+          gap="2"
+          textStyle="regular-sm"
+          color="fg.2"
+          minW="0"
+        >
+          <ChakraLink asChild color="fg.2" flexShrink="0" _hover={{ color: 'fg.0', textDecoration: 'none' }}>
+            <Link to="/">revo</Link>
+          </ChakraLink>
+          {breadcrumbs.map((crumb) => (
+            <HStack key={`${crumb.label}-${crumb.to ?? 'current'}`} as="span" gap="2" minW="0">
+              <Box color="fg.3" display="inline-flex" flexShrink="0">
+                <ChevronRight size={14} />
+              </Box>
+              {crumb.to ? (
+                <ChakraLink asChild color="fg.2" flexShrink="0" _hover={{ color: 'fg.0', textDecoration: 'none' }}>
+                  <Link to={crumb.to}>{crumb.label}</Link>
+                </ChakraLink>
+              ) : (
+                <Text color="fg.0" fontWeight="560" truncate>
+                  {crumb.label}
+                </Text>
+              )}
+            </HStack>
+          ))}
+        </HStack>
+        <Box display={{ base: 'flex', sm: 'none' }}>
+          <BrandLogo />
         </Box>
-        <Text color="fg.0" fontWeight="560" truncate>
-          {crumbForPath(pathname)}
-        </Text>
       </HStack>
-      <Box display={{ base: 'flex', sm: 'none' }}>
-        <BrandLogo />
-      </Box>
-    </HStack>
-    <HStack gap={{ base: '2', md: '3' }}>
-      <InboxButton />
-      <CommandAffordance />
-      <Button
-        asChild
-        size="sm"
-        h="34px"
-        px={{ base: '2.5', sm: '3.5' }}
-        gap="1.5"
-        bg="brand.500"
-        color="brand.on"
-        borderRadius="btn"
-        _hover={{ bg: 'brand.hover' }}
-      >
-        <Link to="/runs/new">
-          <Plus size={16} />
-          <Span display={{ base: 'none', lg: 'inline' }}>New run</Span>
-        </Link>
-      </Button>
-      <Box display={{ base: 'none', lg: 'block' }} w="1px" h="26px" bg="border" />
-      <Box display={{ base: 'none', lg: 'flex' }}>
-        <Avatar />
-      </Box>
-    </HStack>
-  </Flex>
-)
+      <HStack gap={{ base: '2', md: '3' }}>
+        <InboxButton />
+        <CommandAffordance />
+        <Button
+          asChild
+          size="sm"
+          h="34px"
+          px={{ base: '2.5', sm: '3.5' }}
+          gap="1.5"
+          bg="brand.500"
+          color="brand.on"
+          borderRadius="btn"
+          _hover={{ bg: 'brand.hover' }}
+        >
+          <Link to="/runs/new">
+            <Plus size={16} />
+            <Span display={{ base: 'none', lg: 'inline' }}>New run</Span>
+          </Link>
+        </Button>
+        <Box display={{ base: 'none', lg: 'block' }} w="1px" h="26px" bg="border" />
+        <Box display={{ base: 'none', lg: 'flex' }}>
+          <Avatar />
+        </Box>
+      </HStack>
+    </Flex>
+  )
+}
 
 export const Layout = () => {
   const { pathname } = useLocation()
