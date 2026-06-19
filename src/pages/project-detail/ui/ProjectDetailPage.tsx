@@ -3,6 +3,7 @@ import {
   ArrowRight,
   BookOpen,
   ChevronDown,
+  ChevronLeft,
   CircleDot,
   Cpu,
   Database,
@@ -1395,11 +1396,19 @@ const AdrDetail = ({ project, adr }: { readonly project: ProjectRow; readonly ad
     <ChakraLink
       asChild
       alignSelf="flex-start"
+      display="inline-flex"
+      alignItems="center"
+      gap="2"
       color="fg.2"
-      textStyle="medium-xs"
-      _hover={{ color: 'brand.500', textDecoration: 'none' }}
+      fontSize="18px"
+      fontWeight="520"
+      lineHeight="1"
+      _hover={{ color: 'fg.0', textDecoration: 'none' }}
     >
-      <Link to={`/projects/${project.id}/adrs`}>Back to ADRs</Link>
+      <Link to={`/projects/${project.id}/adrs`}>
+        <ChevronLeft size={19} />
+        ADRs
+      </Link>
     </ChakraLink>
     <Grid templateColumns={{ base: '1fr', xl: 'minmax(0, 1.55fr) minmax(340px, 0.75fr)' }} gap="5" alignItems="start">
       <Card p="5">
