@@ -6,7 +6,6 @@ import {
   CircleDot,
   Cpu,
   Database,
-  FileText,
   GitBranch,
   GitPullRequest,
   History,
@@ -51,6 +50,11 @@ const RECENT_ADR_LIMIT = 4
 const RECENT_ACTIVITY_LIMIT = 4
 const ADR_NUMBER_WIDTH = 4
 const OWNER_INITIALS_LENGTH = 2
+const ADR_LINKED_COUNTS: Readonly<Record<number, number>> = {
+  1: 3,
+  2: 1,
+  9: 1,
+}
 
 const projectToneStyles = (
   tone: ProjectTone,
@@ -315,10 +319,16 @@ const TagPill = ({ children }: { readonly children: ReactNode }) => (
   </Span>
 )
 
-const AdrStatusBadge = ({ status }: { readonly status: ProjectAdr['status'] }) => {
+const AdrStatusBadge = ({
+  status,
+  children,
+}: {
+  readonly status: ProjectAdr['status']
+  readonly children?: ReactNode
+}) => {
   const palette = {
     accepted: { fg: 'status.success.fg', bg: 'status.success.bg', border: 'status.success.border' },
-    proposed: { fg: 'status.running.fg', bg: 'status.running.bg', border: 'status.running.border' },
+    proposed: { fg: 'status.waiting.fg', bg: 'status.waiting.bg', border: 'status.waiting.border' },
     superseded: { fg: 'fg.2', bg: 'bg.inset', border: 'border.strong' },
   }[status]
 
@@ -337,7 +347,7 @@ const AdrStatusBadge = ({ status }: { readonly status: ProjectAdr['status'] }) =
       textTransform="capitalize"
       whiteSpace="nowrap"
     >
-      {status}
+      {children ?? status}
     </Span>
   )
 }
@@ -540,87 +550,112 @@ const RepoList = ({ repositories }: { readonly repositories: ReadonlyArray<Proje
   </Card>
 )
 
-const AdrList = ({
-  adrs,
-  compact = false,
-}: {
-  readonly adrs: ReadonlyArray<ProjectAdr>
-  readonly compact?: boolean
-}) => (
-  <Card p="0" overflow="hidden">
-    {adrs.length === 0 ? (
-      <Box px="4" py="5">
-        <EmptyState title="No ADRs yet" description="Decision records will appear here once they are captured." />
-      </Box>
-    ) : (
-      adrs.map((adr) => (
-        <Grid
-          key={adr.id}
-          templateColumns={{ base: '1fr', lg: compact ? 'minmax(0, 1fr) auto' : 'minmax(0, 1fr) 170px 150px' }}
-          gap={{ base: '2.5', lg: '4' }}
-          px="4.5"
-          py="4"
-          alignItems="start"
-          borderBottomWidth="1px"
-          borderColor="border.subtle"
-          _last={{ borderBottomWidth: '0' }}
-        >
-          <HStack gap="3" align="start" minW="0">
-            <Center
-              boxSize="32px"
-              borderRadius="8px"
-              bg="brand.tint"
-              borderWidth="1px"
-              borderColor="brand.softBorder"
-              color="brand.500"
-              flexShrink="0"
-            >
-              <FileText size={15} />
-            </Center>
-            <Stack gap="1.5" minW="0">
-              <HStack gap="2" minW="0" wrap="wrap">
-                <Text className="mono" textStyle="regular-xs" color="fg.3">
-                  ADR-{adr.number}
-                </Text>
-                <Text textStyle="semibold-sm" color="fg.0">
-                  {adr.title}
-                </Text>
-              </HStack>
-              <Text textStyle="regular-sm" color="fg.2" lineHeight="1.5">
-                {adr.summary}
-              </Text>
-              <HStack gap="1.5" wrap="wrap">
-                {adr.tags.map((tag) => (
-                  <TagPill key={tag}>{tag}</TagPill>
-                ))}
-              </HStack>
-            </Stack>
-          </HStack>
-          <Stack gap="2" align={{ base: 'flex-start', lg: compact ? 'flex-end' : 'flex-start' }}>
-            <AdrStatusBadge status={adr.status} />
-            <Text className="mono" textStyle="regular-xs" color="fg.3">
-              {absTime(adr.createdAt)}
-            </Text>
-          </Stack>
-          {compact ? null : (
-            <Stack gap="1.5" align="flex-start" minW="0">
-              <Text className="mono" textStyle="regular-xs" color="fg.1" truncate>
-                {adr.repo}
-              </Text>
-              <ChakraLink
-                asChild
-                color="fg.2"
-                textStyle="medium-xs"
-                _hover={{ color: 'brand.500', textDecoration: 'none' }}
+const adrStatusLabel = (status: ProjectAdr['status']): string => {
+  if (status === 'accepted') return 'Accepted'
+  if (status === 'proposed') return 'Proposed'
+  return 'Superseded'
+}
+
+const revisionStatus = (status: ProjectAdr['status']): ProjectAdr['status'] =>
+  status === 'proposed' ? 'proposed' : 'accepted'
+
+const linkedCountForAdr = (adr: ProjectAdr): number => ADR_LINKED_COUNTS[adr.number] ?? 0
+
+const AdrTableHeaderCell = ({ children }: { readonly children: ReactNode }) => (
+  <Text color="fg.3" fontSize="11.5px" fontWeight="600" textTransform="uppercase" letterSpacing="0">
+    {children}
+  </Text>
+)
+
+const AdrList = ({ adrs }: { readonly adrs: ReadonlyArray<ProjectAdr> }) => (
+  <Box containerType="inline-size">
+    <Card p="0" overflow="hidden">
+      {adrs.length === 0 ? (
+        <Box px="4" py="5">
+          <EmptyState title="No ADRs yet" description="Decision records will appear here once they are captured." />
+        </Box>
+      ) : (
+        <>
+          <Grid
+            templateColumns="116px minmax(0, 1fr) 128px 150px 150px 110px"
+            gap="4"
+            alignItems="center"
+            h="40px"
+            px="4.5"
+            bg="bg.inset"
+            borderBottomWidth="1px"
+            borderColor="border"
+            css={{
+              '@container (max-width: 760px)': {
+                gridTemplateColumns: '96px minmax(0, 1fr) 116px 110px',
+              },
+            }}
+          >
+            <AdrTableHeaderCell>ADR</AdrTableHeaderCell>
+            <AdrTableHeaderCell>Decision</AdrTableHeaderCell>
+            <AdrTableHeaderCell>Status</AdrTableHeaderCell>
+            <AdrTableHeaderCell>Revision</AdrTableHeaderCell>
+            <Box css={{ '@container (max-width: 760px)': { display: 'none' } }}>
+              <AdrTableHeaderCell>Author</AdrTableHeaderCell>
+            </Box>
+            <AdrTableHeaderCell>Updated</AdrTableHeaderCell>
+          </Grid>
+          {adrs.map((adr) => {
+            const linkedCount = linkedCountForAdr(adr)
+
+            return (
+              <Grid
+                key={adr.id}
+                templateColumns="116px minmax(0, 1fr) 128px 150px 150px 110px"
+                gap="4"
+                alignItems="center"
+                px="4.5"
+                py="3.5"
+                borderBottomWidth="1px"
+                borderColor="border"
+                _last={{ borderBottomWidth: '0' }}
+                css={{
+                  '@container (max-width: 760px)': {
+                    gridTemplateColumns: '96px minmax(0, 1fr) 116px 110px',
+                  },
+                }}
               >
-                <Link to={`/runs/${adr.runId}`}>{adr.runId}</Link>
-              </ChakraLink>
-            </Stack>
-          )}
-        </Grid>
-      ))
-    )}
-  </Card>
+                <Text className="mono" color="brand.500" textStyle="semibold-sm">
+                  {formatAdrNumber(adr.number)}
+                </Text>
+                <Stack gap="1.5" minW="0">
+                  <Text color="fg.0" textStyle="semibold-sm" lineHeight="1.25">
+                    {adr.title}
+                  </Text>
+                  <HStack gap="1.5" wrap="wrap">
+                    {adr.tags.map((tag) => (
+                      <TagPill key={tag}>{tag}</TagPill>
+                    ))}
+                    {linkedCount > 0 ? (
+                      <Text className="mono" textStyle="regular-xs" color="fg.3">
+                        ⌘ {linkedCount}
+                      </Text>
+                    ) : null}
+                  </HStack>
+                </Stack>
+                <AdrStatusBadge status={adr.status}>{adrStatusLabel(adr.status)}</AdrStatusBadge>
+                <CompactDecisionStatus status={revisionStatus(adr.status)} />
+                <HStack gap="2" minW="0" css={{ '@container (max-width: 760px)': { display: 'none' } }}>
+                  <AvatarInitials label={ownerInitials(adr.owner)} system={adr.owner === 'orchestrator'} />
+                  <Text color="fg.1" textStyle="regular-sm" truncate>
+                    {adr.owner}
+                  </Text>
+                </HStack>
+                <Text color="fg.3" textStyle="regular-sm" whiteSpace="nowrap">
+                  {relTime(adr.createdAt)}
+                </Text>
+              </Grid>
+            )
+          })}
+        </>
+      )}
+    </Card>
+  </Box>
 )
 
 const RecentDecisionList = ({ adrs }: { readonly adrs: ReadonlyArray<ProjectAdr> }) => (
@@ -1161,8 +1196,7 @@ const OverviewTab = ({
 )
 
 const AdrsTab = ({ adrs }: { readonly adrs: ReadonlyArray<ProjectAdr> }) => (
-  <Stack gap="4">
-    <SectionHead title="Architecture decision records" />
+  <Stack gap="0">
     <AdrList adrs={adrs} />
   </Stack>
 )
