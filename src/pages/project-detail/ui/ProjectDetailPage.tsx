@@ -40,6 +40,11 @@ interface ProjectDetailPageProps {
   readonly tab?: string
 }
 
+interface ProjectAdrDetailPageProps {
+  readonly projectId: string
+  readonly adrId: string
+}
+
 interface DetailTab {
   readonly id: string
   readonly label: string
@@ -356,6 +361,10 @@ const AdrStatusBadge = ({
 
 const formatAdrNumber = (number: number): string => `ADR-${String(number).padStart(ADR_NUMBER_WIDTH, '0')}`
 
+const adrRouteId = (adr: ProjectAdr): string => formatAdrNumber(adr.number).toLowerCase()
+
+const adrHref = (projectId: string, adr: ProjectAdr): string => `/projects/${projectId}/adrs/${adrRouteId(adr)}`
+
 const compactDecisionStatus = (
   status: ProjectAdr['status'],
 ): {
@@ -607,9 +616,11 @@ const AdrList = ({ adrs }: { readonly adrs: ReadonlyArray<ProjectAdr> }) => (
             const linkedCount = linkedCountForAdr(adr)
 
             return (
-              <Grid
+              <ChakraLink
                 key={adr.id}
-                templateColumns="112px minmax(0, 1fr) 104px 124px 126px 86px"
+                asChild
+                display="grid"
+                gridTemplateColumns="112px minmax(0, 1fr) 104px 124px 126px 86px"
                 gap="2.5"
                 alignItems="center"
                 px="4.5"
@@ -617,7 +628,10 @@ const AdrList = ({ adrs }: { readonly adrs: ReadonlyArray<ProjectAdr> }) => (
                 minH="72px"
                 borderBottomWidth="1px"
                 borderColor="border"
+                color="inherit"
+                textDecoration="none"
                 _hover={{ bg: ADR_ROW_HOVER_BG }}
+                _focusVisible={{ outlineWidth: '2px', outlineColor: 'blue.500', outlineOffset: '-2px' }}
                 _last={{ borderBottomWidth: '0' }}
                 css={{
                   '@container (max-width: 760px)': {
@@ -625,36 +639,38 @@ const AdrList = ({ adrs }: { readonly adrs: ReadonlyArray<ProjectAdr> }) => (
                   },
                 }}
               >
-                <Text className="mono" color="brand.500" textStyle="semibold-sm">
-                  {formatAdrNumber(adr.number)}
-                </Text>
-                <Stack gap="1" minW="0">
-                  <Text color="fg.0" textStyle="semibold-sm" lineHeight="1.25">
-                    {adr.title}
+                <Link to={adrHref(adr.projectId, adr)}>
+                  <Text className="mono" color="brand.500" textStyle="semibold-sm">
+                    {formatAdrNumber(adr.number)}
                   </Text>
-                  <HStack gap="1.5" wrap="wrap">
-                    {adr.tags.map((tag) => (
-                      <TagPill key={tag}>{tag}</TagPill>
-                    ))}
-                    {linkedCount > 0 ? (
-                      <Text className="mono" textStyle="regular-xs" color="fg.3">
-                        ⌘ {linkedCount}
-                      </Text>
-                    ) : null}
+                  <Stack gap="1" minW="0">
+                    <Text color="fg.0" textStyle="semibold-sm" lineHeight="1.25">
+                      {adr.title}
+                    </Text>
+                    <HStack gap="1.5" wrap="wrap">
+                      {adr.tags.map((tag) => (
+                        <TagPill key={tag}>{tag}</TagPill>
+                      ))}
+                      {linkedCount > 0 ? (
+                        <Text className="mono" textStyle="regular-xs" color="fg.3">
+                          ⌘ {linkedCount}
+                        </Text>
+                      ) : null}
+                    </HStack>
+                  </Stack>
+                  <AdrStatusBadge status={adr.status}>{adrStatusLabel(adr.status)}</AdrStatusBadge>
+                  <CompactDecisionStatus status={revisionStatus(adr.status)} />
+                  <HStack gap="2" minW="0" css={{ '@container (max-width: 760px)': { display: 'none' } }}>
+                    <AvatarInitials label={ownerInitials(adr.owner)} system={adr.owner === 'orchestrator'} />
+                    <Text color="fg.1" textStyle="regular-sm" truncate>
+                      {adr.owner}
+                    </Text>
                   </HStack>
-                </Stack>
-                <AdrStatusBadge status={adr.status}>{adrStatusLabel(adr.status)}</AdrStatusBadge>
-                <CompactDecisionStatus status={revisionStatus(adr.status)} />
-                <HStack gap="2" minW="0" css={{ '@container (max-width: 760px)': { display: 'none' } }}>
-                  <AvatarInitials label={ownerInitials(adr.owner)} system={adr.owner === 'orchestrator'} />
-                  <Text color="fg.1" textStyle="regular-sm" truncate>
-                    {adr.owner}
+                  <Text color="fg.3" textStyle="regular-sm" whiteSpace="nowrap">
+                    {relTime(adr.createdAt)}
                   </Text>
-                </HStack>
-                <Text color="fg.3" textStyle="regular-sm" whiteSpace="nowrap">
-                  {relTime(adr.createdAt)}
-                </Text>
-              </Grid>
+                </Link>
+              </ChakraLink>
             )
           })}
         </>
@@ -1353,6 +1369,132 @@ const RepoHeaderCell = ({
     {children}
   </Text>
 )
+
+const adrForRouteId = (adrs: ReadonlyArray<ProjectAdr>, adrId: string): ProjectAdr | undefined =>
+  adrs.find((adr) => adr.id === adrId || adrRouteId(adr) === adrId.toLowerCase())
+
+const AdrDetailMetaRow = ({ label, children }: { readonly label: string; readonly children: ReactNode }) => (
+  <Grid
+    templateColumns="112px minmax(0, 1fr)"
+    gap="3"
+    alignItems="center"
+    py="3"
+    borderBottomWidth="1px"
+    borderColor="border"
+    _last={{ borderBottomWidth: '0' }}
+  >
+    <Text color="fg.2" textStyle="regular-sm">
+      {label}
+    </Text>
+    <Box minW="0">{children}</Box>
+  </Grid>
+)
+
+const AdrDetail = ({ project, adr }: { readonly project: ProjectRow; readonly adr: ProjectAdr }) => (
+  <Stack gap="5">
+    <ChakraLink
+      asChild
+      alignSelf="flex-start"
+      color="fg.2"
+      textStyle="medium-xs"
+      _hover={{ color: 'brand.500', textDecoration: 'none' }}
+    >
+      <Link to={`/projects/${project.id}/adrs`}>Back to ADRs</Link>
+    </ChakraLink>
+    <Grid templateColumns={{ base: '1fr', xl: 'minmax(0, 1.55fr) minmax(340px, 0.75fr)' }} gap="5" alignItems="start">
+      <Card p="5">
+        <Stack gap="5">
+          <Stack gap="3">
+            <HStack gap="3" justify="space-between" align="start" wrap="wrap">
+              <Stack gap="1.5" minW="0">
+                <Text className="mono" color="brand.500" textStyle="semibold-sm">
+                  {formatAdrNumber(adr.number)}
+                </Text>
+                <Text color="fg.0" fontSize="26px" fontWeight="720" lineHeight="1.1">
+                  {adr.title}
+                </Text>
+              </Stack>
+              <HStack gap="2" wrap="wrap">
+                <AdrStatusBadge status={adr.status}>{adrStatusLabel(adr.status)}</AdrStatusBadge>
+                <CompactDecisionStatus status={revisionStatus(adr.status)} />
+              </HStack>
+            </HStack>
+            <Text color="fg.2" textStyle="regular-body" lineHeight="1.55" maxW="760px">
+              {adr.summary}
+            </Text>
+          </Stack>
+          <HStack gap="1.5" wrap="wrap">
+            {adr.tags.map((tag) => (
+              <TagPill key={tag}>{tag}</TagPill>
+            ))}
+          </HStack>
+          <Box borderTopWidth="1px" borderColor="border" pt="4">
+            <Text color="fg.0" textStyle="semibold-sm" mb="2">
+              Decision
+            </Text>
+            <Text color="fg.2" textStyle="regular-sm" lineHeight="1.55">
+              This ADR records the current project decision and keeps implementation work aligned with the versioned
+              method, active runs, and reviewer gates.
+            </Text>
+          </Box>
+        </Stack>
+      </Card>
+      <Card p="5">
+        <Stack gap="3">
+          <Text color="fg.0" textStyle="semibold-md">
+            ADR metadata
+          </Text>
+          <Stack gap="0">
+            <AdrDetailMetaRow label="Author">
+              <HStack gap="2" minW="0">
+                <AvatarInitials label={ownerInitials(adr.owner)} system={adr.owner === 'orchestrator'} />
+                <Text color="fg.1" textStyle="regular-sm" truncate>
+                  {adr.owner}
+                </Text>
+              </HStack>
+            </AdrDetailMetaRow>
+            <AdrDetailMetaRow label="Updated">{relTime(adr.createdAt)}</AdrDetailMetaRow>
+            <AdrDetailMetaRow label="Repository">
+              <Text className="mono" color="fg.1" textStyle="regular-xs" truncate>
+                {adr.repo}
+              </Text>
+            </AdrDetailMetaRow>
+            <AdrDetailMetaRow label="Run">
+              <ChakraLink
+                asChild
+                color="brand.500"
+                textStyle="medium-xs"
+                _hover={{ color: 'brand.hover', textDecoration: 'none' }}
+              >
+                <Link to={`/runs/${adr.runId}`}>{adr.runId}</Link>
+              </ChakraLink>
+            </AdrDetailMetaRow>
+          </Stack>
+        </Stack>
+      </Card>
+    </Grid>
+  </Stack>
+)
+
+export const ProjectAdrDetailPage = ({ projectId, adrId }: ProjectAdrDetailPageProps) => {
+  const project = projectById(projectId)
+  const repositories = reposForProject(project.id)
+  const adrs = adrsForProject(project.id)
+  const tabs = tabsForProject(project, repositories)
+  const adr = adrForRouteId(adrs, adrId)
+
+  return (
+    <Stack gap="6">
+      <DetailHeader project={project} />
+      <DetailTabs project={project} tabs={tabs} activeTab="adrs" />
+      {adr ? (
+        <AdrDetail project={project} adr={adr} />
+      ) : (
+        <EmptyState title="ADR not found" description="The requested decision record does not exist in this project." />
+      )}
+    </Stack>
+  )
+}
 
 export const ProjectDetailPage = ({ projectId, tab }: ProjectDetailPageProps) => {
   const project = projectById(projectId)

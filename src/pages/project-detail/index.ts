@@ -1,1 +1,1 @@
-export { ProjectDetailPage } from './ui/ProjectDetailPage'
+export { ProjectAdrDetailPage, ProjectDetailPage } from './ui/ProjectDetailPage'

@@ -34,7 +34,7 @@ import {
 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, Outlet, useLocation } from 'react-router'
-import { HOST_STATUS, INBOX_ITEMS, projectById } from 'src/shared/fixtures'
+import { HOST_STATUS, INBOX_ITEMS, adrsForProject, projectById } from 'src/shared/fixtures'
 import { BrandLogo } from 'src/shared/ui'
 
 interface NavItem {
@@ -57,6 +57,8 @@ const PENDING_INBOX = INBOX_ITEMS.filter((item) => item.status === 'pending').le
 const PATH_SECTION_INDEX = 0
 const PROJECT_ID_INDEX = 1
 const PROJECT_TAB_INDEX = 2
+const PROJECT_DETAIL_INDEX = 3
+const BREADCRUMB_ADR_NUMBER_WIDTH = 4
 
 const NAV_ITEMS: ReadonlyArray<NavItem> = [
   { label: 'Dashboard', to: '/', match: '/', icon: LayoutDashboard },
@@ -83,6 +85,40 @@ const PROJECT_TAB_LABELS: Readonly<Record<string, string>> = {
   activity: 'Activity',
 }
 
+const breadcrumbAdrRouteId = (number: number): string =>
+  `adr-${String(number).padStart(BREADCRUMB_ADR_NUMBER_WIDTH, '0')}`
+
+const breadcrumbAdrLabel = (projectId: string, adrId: string): string => {
+  const adr = adrsForProject(projectId).find(
+    (candidate) => candidate.id === adrId || breadcrumbAdrRouteId(candidate.number) === adrId.toLowerCase(),
+  )
+
+  return adr ? `ADR-${String(adr.number).padStart(BREADCRUMB_ADR_NUMBER_WIDTH, '0')}` : adrId.toUpperCase()
+}
+
+const projectBreadcrumbs = (segments: ReadonlyArray<string>): ReadonlyArray<BreadcrumbItem> => {
+  const projectId = segments[PROJECT_ID_INDEX]
+  const tab = segments[PROJECT_TAB_INDEX]
+  const detailId = segments[PROJECT_DETAIL_INDEX]
+
+  if (!projectId) return [{ label: 'Projects' }]
+
+  const project = projectById(projectId)
+  const crumbs: Array<BreadcrumbItem> = [
+    { label: 'Projects', to: '/projects' },
+    { label: project.name, to: `/projects/${project.id}` },
+  ]
+
+  if (tab) {
+    const tabCrumb = { label: PROJECT_TAB_LABELS[tab] ?? tab, to: `/projects/${project.id}/${tab}` }
+    crumbs.push(detailId ? tabCrumb : { label: tabCrumb.label })
+  }
+
+  if (tab === 'adrs' && detailId) crumbs.push({ label: breadcrumbAdrLabel(project.id, detailId) })
+
+  return crumbs
+}
+
 const breadcrumbsForPath = (pathname: string): ReadonlyArray<BreadcrumbItem> => {
   const segments = pathname.split('/').filter(Boolean)
   const section = segments[PATH_SECTION_INDEX]
@@ -95,22 +131,7 @@ const breadcrumbsForPath = (pathname: string): ReadonlyArray<BreadcrumbItem> => 
   if (section === 'inbox') return [{ label: 'Inbox' }]
   if (section === 'method') return [{ label: 'Method' }]
 
-  if (section === 'projects') {
-    const projectId = segments[PROJECT_ID_INDEX]
-    const tab = segments[PROJECT_TAB_INDEX]
-
-    if (!projectId) return [{ label: 'Projects' }]
-
-    const project = projectById(projectId)
-    const crumbs: Array<BreadcrumbItem> = [
-      { label: 'Projects', to: '/projects' },
-      { label: project.name, to: `/projects/${project.id}` },
-    ]
-
-    if (tab) crumbs.push({ label: PROJECT_TAB_LABELS[tab] ?? tab })
-
-    return crumbs
-  }
+  if (section === 'projects') return projectBreadcrumbs(segments)
 
   return [{ label: 'Control plane' }]
 }

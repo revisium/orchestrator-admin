@@ -11,6 +11,7 @@ export default [
     ]),
     route('/projects', 'routes/Projects.tsx'),
     route('/projects/:projectId', 'routes/ProjectDetail.tsx'),
+    route('/projects/:projectId/adrs/:adrId', 'routes/ProjectAdrDetail.tsx'),
     route('/projects/:projectId/:tab', 'routes/ProjectDetailTab.tsx'),
     route('/inbox', 'routes/Inbox.tsx'),
     route('/inbox/:itemId', 'routes/InboxItem.tsx'),
