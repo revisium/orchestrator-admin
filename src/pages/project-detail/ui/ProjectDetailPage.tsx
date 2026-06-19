@@ -3,6 +3,7 @@ import {
   ArrowRight,
   BookOpen,
   ChevronDown,
+  CircleDot,
   Cpu,
   Database,
   FileText,
@@ -15,12 +16,14 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import {
   absTime,
+  activityForProject,
   adrsForProject,
   knowledgeForProject,
   memoryForProject,
   projectById,
   reposForProject,
   runsForProject,
+  type ProjectActivityEvent,
   type ProjectAdr,
   type ProjectKnowledgeArticle,
   type ProjectMemoryTable,
@@ -76,13 +79,14 @@ const ProjectAvatar = ({ project, size = '46px' }: { readonly project: ProjectRo
 const tabsForProject = (
   project: ProjectRow,
   repositories: ReadonlyArray<ProjectRepository>,
+  activity: ReadonlyArray<ProjectActivityEvent>,
 ): ReadonlyArray<DetailTab> => [
   { id: 'overview', label: 'Overview' },
   { id: 'repositories', label: 'Repositories', count: repositories.length },
   { id: 'knowledge', label: 'Knowledge base', count: project.stats.kb },
   { id: 'adrs', label: 'ADRs', count: project.stats.adrs },
   { id: 'memory', label: 'Memory', count: project.stats.tables },
-  { id: 'activity', label: 'Activity' },
+  { id: 'activity', label: 'Activity', count: activity.length },
 ]
 
 const validTab = (tab: string | undefined): string => {
@@ -338,6 +342,35 @@ const MemoryKindBadge = ({ kind }: { readonly kind: ProjectMemoryTable['kind'] }
     domain: { fg: 'accent.role.fg', bg: 'accent.role.bg', border: 'accent.role.border' },
     operational: { fg: 'status.running.fg', bg: 'status.running.bg', border: 'status.running.border' },
     risk: { fg: 'status.failed.fg', bg: 'status.failed.bg', border: 'status.failed.border' },
+  }[kind]
+
+  return (
+    <Span
+      px="2"
+      h="5"
+      display="inline-flex"
+      alignItems="center"
+      borderRadius="chip"
+      borderWidth="1px"
+      color={palette.fg}
+      bg={palette.bg}
+      borderColor={palette.border}
+      textStyle="medium-xs"
+      textTransform="capitalize"
+      whiteSpace="nowrap"
+    >
+      {kind}
+    </Span>
+  )
+}
+
+const ActivityKindBadge = ({ kind }: { readonly kind: ProjectActivityEvent['kind'] }) => {
+  const palette = {
+    adr: { fg: 'brand.ink', bg: 'brand.soft', border: 'brand.softBorder' },
+    knowledge: { fg: 'accent.role.fg', bg: 'accent.role.bg', border: 'accent.role.border' },
+    memory: { fg: 'status.running.fg', bg: 'status.running.bg', border: 'status.running.border' },
+    repo: { fg: 'fg.2', bg: 'bg.inset', border: 'border' },
+    run: { fg: 'status.success.fg', bg: 'status.success.bg', border: 'status.success.border' },
   }[kind]
 
   return (
@@ -652,6 +685,78 @@ const MemoryMetric = ({
   </Stack>
 )
 
+const ActivityList = ({ events }: { readonly events: ReadonlyArray<ProjectActivityEvent> }) => (
+  <Card p="0" overflow="hidden">
+    {events.length === 0 ? (
+      <Box px="4" py="5">
+        <EmptyState title="No activity yet" description="Project events will appear once agents touch this project." />
+      </Box>
+    ) : (
+      events.map((event) => (
+        <Grid
+          key={event.id}
+          templateColumns={{ base: '1fr', lg: 'minmax(0, 1fr) 180px' }}
+          gap={{ base: '2.5', lg: '4' }}
+          px="4.5"
+          py="4"
+          borderBottomWidth="1px"
+          borderColor="border.subtle"
+          _last={{ borderBottomWidth: '0' }}
+        >
+          <HStack gap="3" align="start" minW="0">
+            <Center
+              boxSize="32px"
+              borderRadius="full"
+              bg="bg.inset"
+              borderWidth="1px"
+              borderColor="border"
+              color="fg.2"
+              flexShrink="0"
+            >
+              <CircleDot size={15} />
+            </Center>
+            <Stack gap="1.5" minW="0">
+              <HStack gap="2" wrap="wrap">
+                <ActivityKindBadge kind={event.kind} />
+                <Text textStyle="semibold-sm" color="fg.0">
+                  {event.title}
+                </Text>
+              </HStack>
+              <Text textStyle="regular-sm" color="fg.2" lineHeight="1.5">
+                {event.summary}
+              </Text>
+              <HStack gap="2" wrap="wrap">
+                <TagPill>{event.target}</TagPill>
+                {event.runId ? (
+                  <ChakraLink
+                    asChild
+                    color="fg.2"
+                    textStyle="medium-xs"
+                    _hover={{ color: 'brand.500', textDecoration: 'none' }}
+                  >
+                    <Link to={`/runs/${event.runId}`}>{event.runId}</Link>
+                  </ChakraLink>
+                ) : null}
+              </HStack>
+            </Stack>
+          </HStack>
+          <Stack gap="1" align={{ base: 'flex-start', lg: 'flex-end' }}>
+            <HStack gap="1.5">
+              <AvatarInitials label={event.actor} system={event.actor === 'orchestrator'} />
+              <Text className="mono" textStyle="regular-xs" color="fg.1">
+                {event.actor}
+              </Text>
+            </HStack>
+            <Text className="mono" textStyle="regular-xs" color="fg.3">
+              {absTime(event.createdAt)}
+            </Text>
+          </Stack>
+        </Grid>
+      ))
+    )}
+  </Card>
+)
+
 const ProjectMeta = ({ project }: { readonly project: ProjectRow }) => (
   <Card>
     <Stack gap="3">
@@ -782,6 +887,13 @@ const MemoryTab = ({ tables }: { readonly tables: ReadonlyArray<ProjectMemoryTab
   </Stack>
 )
 
+const ActivityTab = ({ events }: { readonly events: ReadonlyArray<ProjectActivityEvent> }) => (
+  <Stack gap="4">
+    <SectionHead title="Project activity" />
+    <ActivityList events={events} />
+  </Stack>
+)
+
 const RepositoriesTab = ({ repositories }: { readonly repositories: ReadonlyArray<ProjectRepository> }) => (
   <Box containerType="inline-size">
     <Card p="0" overflow="hidden">
@@ -866,20 +978,15 @@ const RepoHeaderCell = ({
   </Text>
 )
 
-const PlaceholderTab = ({ title }: { readonly title: string }) => (
-  <Card>
-    <EmptyState title={`${title} is coming next`} description="The shell is in place; content rows will follow." />
-  </Card>
-)
-
 export const ProjectDetailPage = ({ projectId, tab }: ProjectDetailPageProps) => {
   const project = projectById(projectId)
   const repositories = reposForProject(project.id)
   const adrs = adrsForProject(project.id)
   const articles = knowledgeForProject(project.id)
   const memoryTables = memoryForProject(project.id)
+  const activity = activityForProject(project.id)
   const activeTab = validTab(tab)
-  const tabs = tabsForProject(project, repositories)
+  const tabs = tabsForProject(project, repositories, activity)
 
   return (
     <Stack gap="6">
@@ -892,7 +999,7 @@ export const ProjectDetailPage = ({ projectId, tab }: ProjectDetailPageProps) =>
       {activeTab === 'knowledge' ? <KnowledgeTab articles={articles} /> : null}
       {activeTab === 'adrs' ? <AdrsTab adrs={adrs} /> : null}
       {activeTab === 'memory' ? <MemoryTab tables={memoryTables} /> : null}
-      {activeTab === 'activity' ? <PlaceholderTab title="Activity" /> : null}
+      {activeTab === 'activity' ? <ActivityTab events={activity} /> : null}
     </Stack>
   )
 }

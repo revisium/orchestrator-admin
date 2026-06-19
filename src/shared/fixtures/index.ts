@@ -27,6 +27,7 @@ export type {
   ProjectKnowledgeArticle,
   ProjectMemoryFact,
   ProjectMemoryTable,
+  ProjectActivityEvent,
 } from './types'
 export {
   TASK_RUNS,
@@ -48,10 +49,12 @@ export { ROLES, roleById, PIPELINES, pipelineById, PLAYBOOKS, playbookRouteRoles
 export {
   PROJECTS,
   PROJECT_ADRS,
+  PROJECT_ACTIVITY,
   PROJECT_KNOWLEDGE,
   PROJECT_MEMORY_TABLES,
   PROJECT_REPOSITORIES,
   RUN_PROJECT,
+  activityForProject,
   adrsForProject,
   knowledgeForProject,
   memoryForProject,

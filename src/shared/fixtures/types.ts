@@ -257,3 +257,15 @@ export interface ProjectMemoryTable {
   readonly facts: ReadonlyArray<ProjectMemoryFact>
   readonly tags: ReadonlyArray<string>
 }
+
+export interface ProjectActivityEvent {
+  readonly id: string
+  readonly projectId: string
+  readonly kind: 'run' | 'adr' | 'knowledge' | 'memory' | 'repo'
+  readonly title: string
+  readonly actor: string
+  readonly createdAt: string
+  readonly summary: string
+  readonly target: string
+  readonly runId?: string
+}
