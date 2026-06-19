@@ -21,6 +21,7 @@ import {
   knowledgeForProject,
   memoryForProject,
   projectById,
+  relTime,
   reposForProject,
   runsForProject,
   type ProjectActivityEvent,
@@ -44,8 +45,9 @@ interface DetailTab {
   readonly count?: number
 }
 
-const RECENT_ADR_LIMIT = 3
-const MEMORY_PREVIEW_LIMIT = 2
+const RECENT_ADR_LIMIT = 4
+const RECENT_ACTIVITY_LIMIT = 4
+const ADR_NUMBER_WIDTH = 4
 
 const projectToneStyles = (
   tone: ProjectTone,
@@ -79,14 +81,13 @@ const ProjectAvatar = ({ project, size = '46px' }: { readonly project: ProjectRo
 const tabsForProject = (
   project: ProjectRow,
   repositories: ReadonlyArray<ProjectRepository>,
-  activity: ReadonlyArray<ProjectActivityEvent>,
 ): ReadonlyArray<DetailTab> => [
   { id: 'overview', label: 'Overview' },
   { id: 'repositories', label: 'Repositories', count: repositories.length },
   { id: 'knowledge', label: 'Knowledge base', count: project.stats.kb },
   { id: 'adrs', label: 'ADRs', count: project.stats.adrs },
   { id: 'memory', label: 'Memory', count: project.stats.tables },
-  { id: 'activity', label: 'Activity', count: activity.length },
+  { id: 'activity', label: 'Activity' },
 ]
 
 const validTab = (tab: string | undefined): string => {
@@ -98,32 +99,27 @@ const validTab = (tab: string | undefined): string => {
   return 'overview'
 }
 
-const DetailHeader = ({ project }: { readonly project: ProjectRow }) => (
-  <Stack gap="4">
-    <ChakraLink
-      asChild
-      alignSelf="flex-start"
-      color="fg.2"
-      textStyle="medium-xs"
-      _hover={{ color: 'fg.0', textDecoration: 'none' }}
-    >
-      <Link to="/projects">Back to projects</Link>
-    </ChakraLink>
-    <FlexHeader project={project} />
-  </Stack>
-)
+const DetailHeader = ({ project }: { readonly project: ProjectRow }) => <FlexHeader project={project} />
 
 const FlexHeader = ({ project }: { readonly project: ProjectRow }) => (
   <Grid templateColumns={{ base: '1fr', xl: 'minmax(0, 1fr) auto' }} gap="5" alignItems="start">
     <HStack gap="4" align="flex-start" minW="0">
-      <ProjectAvatar project={project} />
+      <ProjectAvatar project={project} size="56px" />
       <Stack gap="2" minW="0">
-        <Text className="mono" textStyle="regular-xs" color="fg.3">
-          {project.org} /
-        </Text>
-        <Text textStyle="bold-xxl" color="fg.0" lineHeight="1.12" letterSpacing="0">
-          {project.name}
-        </Text>
+        <HStack gap="3" align="baseline" wrap="wrap">
+          <Text className="mono" textStyle="regular-sm" color="fg.3">
+            {project.org} /
+          </Text>
+          <Text
+            color="fg.0"
+            fontSize={{ base: '32px', lg: '30px' }}
+            fontWeight="720"
+            lineHeight="1.08"
+            letterSpacing="0"
+          >
+            {project.name}
+          </Text>
+        </HStack>
         <Text textStyle="regular-body" color="fg.2" maxW="760px">
           {project.description}
         </Text>
@@ -160,7 +156,16 @@ const FlexHeader = ({ project }: { readonly project: ProjectRow }) => (
         <History size={13} />
         <Span className="mono">{project.headRev}</Span>
       </HStack>
-      <Button size="sm" h="34px" px="3" gap="2" bg="brand.500" color="brand.on" _hover={{ bg: 'brand.hover' }}>
+      <Button
+        size="sm"
+        h="34px"
+        px="3.5"
+        gap="2"
+        bg="brand.500"
+        color="brand.on"
+        borderRadius="btn"
+        _hover={{ bg: 'brand.hover' }}
+      >
         <Plus size={14} />
         New ADR
       </Button>
@@ -193,22 +198,35 @@ const DetailTabs = ({
         <ChakraLink
           key={tab.id}
           asChild
-          h="40px"
-          px="4"
+          h="48px"
+          px="4.5"
           display="inline-flex"
           alignItems="center"
           gap="2"
           flexShrink="0"
-          borderBottomWidth="1px"
-          borderColor={active ? 'fg.1' : 'transparent'}
+          borderBottomWidth="2px"
+          borderColor={active ? 'brand.500' : 'transparent'}
           color={active ? 'fg.0' : 'fg.2'}
           textStyle={active ? 'semibold-sm' : 'medium-sm'}
           _hover={{ color: 'fg.0', textDecoration: 'none' }}
+          _focusVisible={{ outline: 'none', boxShadow: 'none' }}
         >
           <Link to={to}>
             {tab.label}
             {tab.count ? (
-              <Span className="mono tnum" color="fg.3">
+              <Span
+                className="mono tnum"
+                minW="5"
+                h="5"
+                px="1.5"
+                display="inline-flex"
+                alignItems="center"
+                justifyContent="center"
+                borderRadius="pill"
+                bg="bg.inset"
+                color="fg.3"
+                textStyle="medium-xs"
+              >
                 {tab.count}
               </Span>
             ) : null}
@@ -228,10 +246,10 @@ const StatCard = ({
   readonly label: string
   readonly value: number
 }) => (
-  <Card p="4">
-    <Stack gap="2.5">
+  <Card p="5" minH="136px">
+    <Stack gap="3">
       <Center
-        boxSize="28px"
+        boxSize="32px"
         borderRadius="8px"
         bg="brand.tint"
         color="brand.500"
@@ -240,7 +258,7 @@ const StatCard = ({
       >
         <Icon size={15} />
       </Center>
-      <Text className="tnum" color="fg.0" fontSize="24px" fontWeight="680" lineHeight="1">
+      <Text className="tnum" color="fg.0" fontSize="30px" fontWeight="700" lineHeight="1">
         {value}
       </Text>
       <Text color="fg.2" textStyle="regular-xs">
@@ -314,6 +332,63 @@ const AdrStatusBadge = ({ status }: { readonly status: ProjectAdr['status'] }) =
     >
       {status}
     </Span>
+  )
+}
+
+const formatAdrNumber = (number: number): string => `ADR-${String(number).padStart(ADR_NUMBER_WIDTH, '0')}`
+
+const compactDecisionStatus = (
+  status: ProjectAdr['status'],
+): {
+  readonly label: string
+  readonly fg: string
+  readonly bg: string
+  readonly border: string
+  readonly dot: string
+} => {
+  if (status === 'proposed') {
+    return {
+      label: 'Awaiting Gate',
+      fg: 'status.waiting.fg',
+      bg: 'status.waiting.bg',
+      border: 'status.waiting.border',
+      dot: 'dot.waiting',
+    }
+  }
+
+  if (status === 'superseded') {
+    return { label: 'Superseded', fg: 'fg.2', bg: 'bg.inset', border: 'border.strong', dot: 'dot.muted' }
+  }
+
+  return {
+    label: 'Committed',
+    fg: 'status.success.fg',
+    bg: 'status.success.bg',
+    border: 'status.success.border',
+    dot: 'dot.success',
+  }
+}
+
+const CompactDecisionStatus = ({ status }: { readonly status: ProjectAdr['status'] }) => {
+  const palette = compactDecisionStatus(status)
+
+  return (
+    <HStack
+      as="span"
+      h="6"
+      px="2.5"
+      gap="1.5"
+      borderRadius="chip"
+      borderWidth="1px"
+      color={palette.fg}
+      bg={palette.bg}
+      borderColor={palette.border}
+      textStyle="medium-sm"
+      whiteSpace="nowrap"
+    >
+      <Box boxSize="1.5" borderRadius="full" bg={palette.dot} />
+      {palette.label}
+    </HStack>
   )
 }
 
@@ -496,6 +571,34 @@ const AdrList = ({
         </Grid>
       ))
     )}
+  </Card>
+)
+
+const RecentDecisionList = ({ adrs }: { readonly adrs: ReadonlyArray<ProjectAdr> }) => (
+  <Card p="0" overflow="hidden">
+    {adrs.map((adr) => (
+      <Grid
+        key={adr.id}
+        templateColumns={{ base: '88px minmax(0, 1fr)', md: '112px minmax(0, 1fr) auto' }}
+        gap="3"
+        alignItems="center"
+        px="4"
+        py="3.5"
+        borderBottomWidth="1px"
+        borderColor="border"
+        _last={{ borderBottomWidth: '0' }}
+      >
+        <Text className="mono" color="brand.500" textStyle="semibold-sm">
+          {formatAdrNumber(adr.number)}
+        </Text>
+        <Text color="fg.0" textStyle="regular-body" fontWeight="500" truncate>
+          {adr.title}
+        </Text>
+        <Box display={{ base: 'none', md: 'block' }}>
+          <CompactDecisionStatus status={adr.status} />
+        </Box>
+      </Grid>
+    ))}
   </Card>
 )
 
@@ -757,17 +860,84 @@ const ActivityList = ({ events }: { readonly events: ReadonlyArray<ProjectActivi
   </Card>
 )
 
+const activityPreviewStyle = (
+  kind: ProjectActivityEvent['kind'],
+): { readonly color: string; readonly bg: string; readonly icon: ReactNode } => {
+  if (kind === 'run') return { color: 'accent.role.fg', bg: 'accent.role.bg', icon: <CircleDot size={14} /> }
+  if (kind === 'repo') return { color: 'status.running.fg', bg: 'status.running.bg', icon: <GitBranch size={14} /> }
+  return { color: 'fg.2', bg: 'bg.inset', icon: <History size={14} /> }
+}
+
+const ActivityPreviewIcon = ({ kind }: { readonly kind: ProjectActivityEvent['kind'] }) => {
+  const style = activityPreviewStyle(kind)
+
+  return (
+    <Center
+      boxSize="30px"
+      borderRadius="8px"
+      bg={style.bg}
+      borderWidth="1px"
+      borderColor="border"
+      color={style.color}
+      flexShrink="0"
+    >
+      {style.icon}
+    </Center>
+  )
+}
+
+const RecentActivityPreview = ({ events }: { readonly events: ReadonlyArray<ProjectActivityEvent> }) => (
+  <Card p="0" overflow="hidden">
+    {events.slice(0, RECENT_ACTIVITY_LIMIT).map((event) => (
+      <HStack
+        key={event.id}
+        gap="3"
+        align="start"
+        px="4"
+        py="3.5"
+        borderBottomWidth="1px"
+        borderColor="border"
+        _last={{ borderBottomWidth: '0' }}
+      >
+        <ActivityPreviewIcon kind={event.kind} />
+        <Stack gap="1" minW="0">
+          <Text color="fg.0" textStyle="medium-sm" lineHeight="1.3">
+            {event.title}
+          </Text>
+          <HStack gap="2" wrap="wrap" color="fg.3" textStyle="regular-xs">
+            <Span
+              className="mono"
+              px="2"
+              py="0.5"
+              borderRadius="4px"
+              bg="bg.inset"
+              borderWidth="1px"
+              borderColor="border"
+            >
+              {event.target}
+            </Span>
+            <Span>·</Span>
+            <Span>{event.actor}</Span>
+            <Span>·</Span>
+            <Span>{relTime(event.createdAt)}</Span>
+          </HStack>
+        </Stack>
+      </HStack>
+    ))}
+  </Card>
+)
+
 const ProjectMetaRow = ({ label, children }: { readonly label: string; readonly children: ReactNode }) => (
   <Grid
-    templateColumns="104px minmax(0, 1fr)"
+    templateColumns="126px minmax(0, 1fr)"
     gap="3"
     alignItems="start"
-    py="2.5"
+    py="3"
     borderBottomWidth="1px"
-    borderColor="border.subtle"
+    borderColor="border"
     _last={{ borderBottomWidth: '0' }}
   >
-    <Text textStyle="regular-body" color="fg.2">
+    <Text textStyle="regular-body" color="fg.2" whiteSpace="nowrap">
       {label}
     </Text>
     <Box minW="0">
@@ -806,7 +976,7 @@ const ProjectMeta = ({ project }: { readonly project: ProjectRow }) => (
       <ProjectMetaRow label="Default branch">{project.defaultBranch}</ProjectMetaRow>
       <ProjectMetaRow label="Head revision">{project.headRev}</ProjectMetaRow>
       <ProjectMetaRow label="Open PRs">{project.openPRs}</ProjectMetaRow>
-      <ProjectMetaRow label="Updated">{absTime(project.updatedAt)}</ProjectMetaRow>
+      <ProjectMetaRow label="Updated">{relTime(project.updatedAt)}</ProjectMetaRow>
     </Stack>
   </Card>
 )
@@ -837,7 +1007,7 @@ const ActiveRuns = ({ project }: { readonly project: ProjectRow }) => {
             <Link to={`/runs/${run.id}`}>
               <Box alignSelf="stretch" bg={`dot.${toneForStatus(run.status)}`} />
               <Stack gap="0.5" minW="0" py="3">
-                <Text textStyle="medium-xs" color="fg.0" truncate>
+                <Text textStyle="medium-xs" color="fg.0" lineHeight="1.25">
                   {run.title}
                 </Text>
                 <Text className="mono" textStyle="regular-micro" color="fg.3">
@@ -857,14 +1027,14 @@ const OverviewTab = ({
   project,
   repositories,
   adrs,
-  memoryTables,
+  activity,
 }: {
   readonly project: ProjectRow
   readonly repositories: ReadonlyArray<ProjectRepository>
   readonly adrs: ReadonlyArray<ProjectAdr>
-  readonly memoryTables: ReadonlyArray<ProjectMemoryTable>
+  readonly activity: ReadonlyArray<ProjectActivityEvent>
 }) => (
-  <Grid templateColumns={{ base: '1fr', xl: 'minmax(0, 1.7fr) minmax(280px, 1fr)' }} gap="7" alignItems="start">
+  <Grid templateColumns={{ base: '1fr', xl: 'minmax(0, 1.55fr) minmax(390px, 1fr)' }} gap="7" alignItems="start">
     <Stack gap="6">
       <Grid templateColumns={{ base: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' }} gap="3">
         <StatCard icon={GitBranch} label="Repositories" value={repositories.length} />
@@ -878,11 +1048,7 @@ const OverviewTab = ({
       </Box>
       <Box>
         <SectionHead title="Recent decisions" to={`/projects/${project.id}/adrs`} action="All ADRs" />
-        <AdrList adrs={adrs.slice(0, RECENT_ADR_LIMIT)} compact />
-      </Box>
-      <Box>
-        <SectionHead title="Memory" to={`/projects/${project.id}/memory`} action="All tables" />
-        <MemoryList tables={memoryTables.slice(0, MEMORY_PREVIEW_LIMIT)} compact />
+        <RecentDecisionList adrs={adrs.slice(0, RECENT_ADR_LIMIT)} />
       </Box>
     </Stack>
     <Stack gap="5">
@@ -890,6 +1056,10 @@ const OverviewTab = ({
       <Box>
         <SectionHead title="Active runs" />
         <ActiveRuns project={project} />
+      </Box>
+      <Box>
+        <SectionHead title="Recent activity" to={`/projects/${project.id}/activity`} />
+        <RecentActivityPreview events={activity} />
       </Box>
     </Stack>
   </Grid>
@@ -1015,14 +1185,14 @@ export const ProjectDetailPage = ({ projectId, tab }: ProjectDetailPageProps) =>
   const memoryTables = memoryForProject(project.id)
   const activity = activityForProject(project.id)
   const activeTab = validTab(tab)
-  const tabs = tabsForProject(project, repositories, activity)
+  const tabs = tabsForProject(project, repositories)
 
   return (
     <Stack gap="6">
       <DetailHeader project={project} />
       <DetailTabs project={project} tabs={tabs} activeTab={activeTab} />
       {activeTab === 'overview' ? (
-        <OverviewTab project={project} repositories={repositories} adrs={adrs} memoryTables={memoryTables} />
+        <OverviewTab project={project} repositories={repositories} adrs={adrs} activity={activity} />
       ) : null}
       {activeTab === 'repositories' ? <RepositoriesTab repositories={repositories} /> : null}
       {activeTab === 'knowledge' ? <KnowledgeTab articles={articles} /> : null}
