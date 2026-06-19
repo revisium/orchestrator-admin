@@ -12,6 +12,7 @@ import {
   History,
   Layers3,
   Plus,
+  Rocket,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
@@ -49,6 +50,7 @@ interface DetailTab {
 const RECENT_ADR_LIMIT = 4
 const RECENT_ACTIVITY_LIMIT = 4
 const ADR_NUMBER_WIDTH = 4
+const OWNER_INITIALS_LENGTH = 2
 
 const projectToneStyles = (
   tone: ProjectTone,
@@ -210,11 +212,10 @@ const DetailTabs = ({
           flexShrink="0"
           borderBottomWidth="2px"
           borderColor={active ? 'brand.500' : 'transparent'}
-          bg={active ? 'bg.1' : 'transparent'}
+          bg="transparent"
           color={active ? 'fg.0' : 'fg.2'}
           textStyle={active ? 'semibold-sm' : 'medium-sm'}
           _hover={{ color: 'fg.0', textDecoration: 'none' }}
-          _focus={{ outlineWidth: '2px', outlineColor: 'blue.500', outlineOffset: '-2px' }}
           _focusVisible={{ outlineWidth: '2px', outlineColor: 'blue.500', outlineOffset: '-2px' }}
         >
           <Link to={to}>
@@ -398,24 +399,66 @@ const CompactDecisionStatus = ({ status }: { readonly status: ProjectAdr['status
   )
 }
 
-const KnowledgeSourceBadge = ({ source }: { readonly source: ProjectKnowledgeArticle['source'] }) => (
-  <Span
-    px="2"
-    h="5"
-    display="inline-flex"
-    alignItems="center"
-    borderRadius="chip"
-    borderWidth="1px"
-    color={source === 'method' ? 'brand.ink' : 'fg.2'}
-    bg={source === 'method' ? 'brand.soft' : 'bg.inset'}
-    borderColor={source === 'method' ? 'brand.softBorder' : 'border'}
-    textStyle="medium-xs"
-    textTransform="capitalize"
-    whiteSpace="nowrap"
-  >
-    {source}
-  </Span>
-)
+const knowledgeStatusMeta = (
+  status: NonNullable<ProjectKnowledgeArticle['status']>,
+): {
+  readonly label: string
+  readonly fg: string
+  readonly bg: string
+  readonly border: string
+  readonly dot: string
+} => {
+  if (status === 'in-review') {
+    return {
+      label: 'In Review',
+      fg: 'status.waiting.fg',
+      bg: 'status.waiting.bg',
+      border: 'status.waiting.border',
+      dot: 'dot.waiting',
+    }
+  }
+
+  if (status === 'draft') {
+    return {
+      label: 'Draft',
+      fg: 'fg.2',
+      bg: 'bg.inset',
+      border: 'border.strong',
+      dot: 'dot.muted',
+    }
+  }
+
+  return {
+    label: 'Committed',
+    fg: 'status.success.fg',
+    bg: 'status.success.bg',
+    border: 'status.success.border',
+    dot: 'dot.success',
+  }
+}
+
+const KnowledgeStatusBadge = ({ status }: { readonly status: NonNullable<ProjectKnowledgeArticle['status']> }) => {
+  const palette = knowledgeStatusMeta(status)
+
+  return (
+    <HStack
+      as="span"
+      h="6"
+      px="2.5"
+      gap="1.5"
+      borderRadius="chip"
+      borderWidth="1px"
+      color={palette.fg}
+      bg={palette.bg}
+      borderColor={palette.border}
+      textStyle="medium-sm"
+      whiteSpace="nowrap"
+    >
+      <Box boxSize="1.5" borderRadius="full" bg={palette.dot} />
+      {palette.label}
+    </HStack>
+  )
+}
 
 const MemoryKindBadge = ({ kind }: { readonly kind: ProjectMemoryTable['kind'] }) => {
   const palette = {
@@ -608,63 +651,109 @@ const RecentDecisionList = ({ adrs }: { readonly adrs: ReadonlyArray<ProjectAdr>
   </Card>
 )
 
-const KnowledgeList = ({ articles }: { readonly articles: ReadonlyArray<ProjectKnowledgeArticle> }) => (
-  <Grid templateColumns={{ base: '1fr', xl: 'repeat(2, minmax(0, 1fr))' }} gap="4">
-    {articles.length === 0 ? (
-      <Box gridColumn="1 / -1">
-        <EmptyState title="No knowledge articles yet" description="Project knowledge will appear after ingestion." />
-      </Box>
-    ) : (
-      articles.map((article) => (
-        <Card key={article.id} p="4.5" minH="210px" display="flex" flexDirection="column">
-          <Stack gap="3" h="100%">
-            <HStack gap="3" align="start">
-              <Center
-                boxSize="32px"
-                borderRadius="8px"
-                bg="bg.inset"
-                borderWidth="1px"
-                borderColor="border"
-                color="fg.2"
-                flexShrink="0"
-              >
-                {article.source === 'memory' ? <Database size={15} /> : <BookOpen size={15} />}
-              </Center>
-              <Stack gap="1" minW="0" flex="1">
-                <HStack gap="2" wrap="wrap">
-                  <KnowledgeSourceBadge source={article.source} />
-                  <Text className="mono" textStyle="regular-xs" color="fg.3">
-                    {absTime(article.updatedAt)}
-                  </Text>
-                </HStack>
-                <Text textStyle="semibold-sm" color="fg.0">
-                  {article.title}
-                </Text>
-              </Stack>
-            </HStack>
-            <Text textStyle="regular-sm" color="fg.2" lineHeight="1.55">
+const KNOWLEDGE_CATEGORIES: ReadonlyArray<{
+  readonly id: NonNullable<ProjectKnowledgeArticle['category']>
+  readonly label: string
+  readonly icon: typeof Layers3
+}> = [
+  { id: 'architecture', label: 'Architecture', icon: Layers3 },
+  { id: 'product', label: 'Product', icon: Rocket },
+  { id: 'runners', label: 'Runners', icon: Cpu },
+]
+
+const fallbackKnowledgeCategory = (
+  article: ProjectKnowledgeArticle,
+): NonNullable<ProjectKnowledgeArticle['category']> => {
+  if (article.source === 'method') return 'architecture'
+  if (article.source === 'run') return 'runners'
+  return 'product'
+}
+
+const ownerInitials = (owner: string): string => owner.slice(0, OWNER_INITIALS_LENGTH)
+
+const KnowledgeArticleCard = ({ article }: { readonly article: ProjectKnowledgeArticle }) => {
+  const status = article.status ?? 'committed'
+  const version = article.version ?? 1
+
+  return (
+    <Card p="4" minH="126px" display="flex" flexDirection="column">
+      <Stack gap="3" h="100%">
+        <HStack gap="3" align="start">
+          <Stack gap="2" minW="0" flex="1">
+            <Text textStyle="semibold-md" color="fg.0" lineHeight="1.25">
+              {article.title}
+            </Text>
+            <Text textStyle="regular-sm" color="fg.2" lineHeight="1.45">
               {article.summary}
             </Text>
-            <HStack gap="1.5" wrap="wrap">
-              {article.tags.map((tag) => (
-                <TagPill key={tag}>{tag}</TagPill>
-              ))}
-            </HStack>
-            <HStack mt="auto" pt="3" borderTopWidth="1px" borderColor="border.subtle" gap="3" minW="0">
-              <AvatarInitials label={article.owner} system={article.owner === 'orchestrator'} />
-              <Text className="mono" textStyle="regular-xs" color="fg.2">
-                {article.owner}
-              </Text>
-              <Text className="mono" textStyle="regular-xs" color="fg.3" ml="auto" truncate>
-                {article.repo}
-              </Text>
-            </HStack>
           </Stack>
-        </Card>
-      ))
-    )}
-  </Grid>
-)
+          <KnowledgeStatusBadge status={status} />
+        </HStack>
+        <HStack mt="auto" gap="2" minW="0" color="fg.3" textStyle="regular-xs">
+          <Text className="mono" whiteSpace="nowrap">
+            v{version}
+          </Text>
+          <Span>·</Span>
+          <AvatarInitials label={ownerInitials(article.owner)} system={article.owner === 'orchestrator'} />
+          <Text color="fg.2" truncate minW="0">
+            {article.owner}
+          </Text>
+          <Text ml="auto" whiteSpace="nowrap">
+            {relTime(article.updatedAt)}
+          </Text>
+        </HStack>
+      </Stack>
+    </Card>
+  )
+}
+
+const KnowledgeCategorySection = ({
+  category,
+  articles,
+}: {
+  readonly category: (typeof KNOWLEDGE_CATEGORIES)[number]
+  readonly articles: ReadonlyArray<ProjectKnowledgeArticle>
+}) => {
+  const Icon = category.icon
+
+  if (articles.length === 0) return null
+
+  return (
+    <Stack gap="3">
+      <HStack gap="2" color="fg.2">
+        <Icon size={15} />
+        <Text textStyle="semibold-sm" textTransform="uppercase" letterSpacing="0" color="fg.2">
+          {category.label}
+        </Text>
+      </HStack>
+      <Grid templateColumns={{ base: '1fr', xl: 'repeat(2, minmax(0, 1fr))' }} gap="4">
+        {articles.map((article) => (
+          <KnowledgeArticleCard key={article.id} article={article} />
+        ))}
+      </Grid>
+    </Stack>
+  )
+}
+
+const KnowledgeList = ({ articles }: { readonly articles: ReadonlyArray<ProjectKnowledgeArticle> }) => {
+  if (articles.length === 0) {
+    return <EmptyState title="No knowledge articles yet" description="Project knowledge will appear after ingestion." />
+  }
+
+  return (
+    <Stack gap="7">
+      {KNOWLEDGE_CATEGORIES.map((category) => (
+        <KnowledgeCategorySection
+          key={category.id}
+          category={category}
+          articles={articles.filter(
+            (article) => (article.category ?? fallbackKnowledgeCategory(article)) === category.id,
+          )}
+        />
+      ))}
+    </Stack>
+  )
+}
 
 const MemoryFactList = ({ table }: { readonly table: ProjectMemoryTable }) => (
   <Stack gap="2">
@@ -1078,9 +1167,35 @@ const AdrsTab = ({ adrs }: { readonly adrs: ReadonlyArray<ProjectAdr> }) => (
   </Stack>
 )
 
-const KnowledgeTab = ({ articles }: { readonly articles: ReadonlyArray<ProjectKnowledgeArticle> }) => (
-  <Stack gap="4">
-    <SectionHead title="Knowledge base" />
+const KnowledgeTab = ({
+  project,
+  articles,
+}: {
+  readonly project: ProjectRow
+  readonly articles: ReadonlyArray<ProjectKnowledgeArticle>
+}) => (
+  <Stack gap="5">
+    <HStack justify="space-between" align="center" gap="4" wrap="wrap">
+      <Text color="fg.2" textStyle="regular-sm">
+        {articles.length} articles · versioned in <Span className="mono">{project.key}</Span>
+      </Text>
+      <Button
+        size="sm"
+        h="34px"
+        px="3.5"
+        gap="2"
+        bg="bg.1"
+        color="fg.0"
+        borderWidth="1px"
+        borderColor="border.strong"
+        borderRadius="btn"
+        boxShadow="0 1px 2px rgba(33, 28, 20, 0.08)"
+        _hover={{ bg: 'blackAlpha.50' }}
+      >
+        <Plus size={14} />
+        New article
+      </Button>
+    </HStack>
     <KnowledgeList articles={articles} />
   </Stack>
 )
@@ -1218,7 +1333,7 @@ export const ProjectDetailPage = ({ projectId, tab }: ProjectDetailPageProps) =>
         <OverviewTab project={project} repositories={repositories} adrs={adrs} activity={activity} />
       ) : null}
       {activeTab === 'repositories' ? <RepositoriesTab repositories={repositories} /> : null}
-      {activeTab === 'knowledge' ? <KnowledgeTab articles={articles} /> : null}
+      {activeTab === 'knowledge' ? <KnowledgeTab project={project} articles={articles} /> : null}
       {activeTab === 'adrs' ? <AdrsTab adrs={adrs} /> : null}
       {activeTab === 'memory' ? <MemoryTab tables={memoryTables} /> : null}
       {activeTab === 'activity' ? <ActivityTab events={activity} /> : null}

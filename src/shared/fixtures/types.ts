@@ -229,6 +229,9 @@ export interface ProjectKnowledgeArticle {
   readonly projectId: string
   readonly title: string
   readonly source: 'method' | 'repo' | 'run' | 'memory'
+  readonly category?: 'architecture' | 'product' | 'runners'
+  readonly status?: 'committed' | 'in-review' | 'draft'
+  readonly version?: number
   readonly owner: string
   readonly updatedAt: string
   readonly repo: string
