@@ -1,29 +1,49 @@
 #!/usr/bin/env node
 
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
+import { parseEnv } from 'node:util'
 import { fileURLToPath } from 'node:url'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const ACTION_ARG_INDEX = 2
+const ENV_DIR = '.env'
+
+function readEnvFile(filePath) {
+  if (!existsSync(filePath)) return {}
+  return parseEnv(readFileSync(filePath, 'utf8'))
+}
+
+function loadLocalEnv(mode) {
+  const envRoot = resolve(repoRoot, ENV_DIR)
+  return Object.assign(
+    {},
+    readEnvFile(resolve(envRoot, '.env')),
+    readEnvFile(resolve(envRoot, '.env.local')),
+    readEnvFile(resolve(envRoot, `.env.${mode}`)),
+    readEnvFile(resolve(envRoot, `.env.${mode}.local`)),
+  )
+}
+
+const env = { ...loadLocalEnv(process.env.NODE_ENV ?? 'development'), ...process.env }
 
 const config = {
-  revoCli: process.env.REVO_CLI ?? resolve(repoRoot, '../agent-orchestrator/bin/revo.js'),
-  dataDir: resolve(repoRoot, process.env.REVO_DEV_DATA_DIR ?? '.revo/dev'),
-  controlPort: process.env.REVO_DEV_PORT ?? '19322',
-  graphqlPort: process.env.REVO_DEV_GRAPHQL_PORT ?? '19323',
-  pgPort: process.env.REVO_DEV_PG_PORT ?? '15540',
-  adminPort: process.env.REVO_ADMIN_PORT ?? '5173',
+  revoCli: env.REVO_CLI ?? resolve(repoRoot, '../agent-orchestrator/bin/revo.js'),
+  dataDir: resolve(repoRoot, env.REVO_DEV_DATA_DIR ?? '.revo/dev'),
+  controlPort: env.REVO_DEV_PORT ?? '19322',
+  graphqlPort: env.REVO_DEV_GRAPHQL_PORT ?? '19323',
+  pgPort: env.REVO_DEV_PG_PORT ?? '15540',
+  adminPort: env.REVO_ADMIN_PORT ?? '5173',
 }
 
 const revoEnv = {
-  ...process.env,
+  ...env,
   REVO_DATA_DIR: config.dataDir,
   REVO_PORT: config.controlPort,
   REVO_PG_PORT: config.pgPort,
   REVO_GRAPHQL_PORT: config.graphqlPort,
-  REVO_ADMIN_GRAPHQL_TARGET: process.env.REVO_ADMIN_GRAPHQL_TARGET ?? `http://127.0.0.1:${config.graphqlPort}`,
+  REVO_ADMIN_GRAPHQL_TARGET: env.REVO_ADMIN_GRAPHQL_TARGET ?? `http://127.0.0.1:${config.graphqlPort}`,
 }
 
 function commandForRevo(args) {
@@ -41,7 +61,7 @@ function commandForPnpm(args) {
 function run(command, args, options = {}) {
   return new Promise((resolveRun, rejectRun) => {
     const child = spawn(command, args, {
-      cwd: repoRoot,
+      cwd: options.cwd ?? repoRoot,
       env: options.env ?? process.env,
       stdio: options.stdio ?? 'inherit',
     })
@@ -61,7 +81,7 @@ function run(command, args, options = {}) {
 
 function spawnLong(name, command, args, options = {}) {
   const child = spawn(command, args, {
-    cwd: repoRoot,
+    cwd: options.cwd ?? repoRoot,
     env: options.env ?? process.env,
     stdio: 'inherit',
   })
@@ -77,13 +97,15 @@ function spawnLong(name, command, args, options = {}) {
 }
 
 async function runRevo(args) {
+  mkdirSync(config.dataDir, { recursive: true })
   const { command, args: commandArgs } = commandForRevo(args)
-  await run(command, commandArgs, { env: revoEnv })
+  await run(command, commandArgs, { cwd: config.dataDir, env: revoEnv })
 }
 
 function spawnRevo(args) {
+  mkdirSync(config.dataDir, { recursive: true })
   const { command, args: commandArgs } = commandForRevo(args)
-  return spawnLong('revo', command, commandArgs, { env: revoEnv })
+  return spawnLong('revo', command, commandArgs, { cwd: config.dataDir, env: revoEnv })
 }
 
 async function startBackend() {
@@ -109,7 +131,7 @@ async function statusBackend() {
 }
 
 async function logsBackend() {
-  await runRevo(['revisium', 'logs', '--lines', process.env.REVO_DEV_LOG_LINES ?? '80'])
+  await runRevo(['revisium', 'logs', '--lines', env.REVO_DEV_LOG_LINES ?? '80'])
 }
 
 async function serveGraphql() {
@@ -129,7 +151,7 @@ async function devFull() {
     shuttingDown = true
     admin.kill('SIGTERM')
     graphql.kill('SIGTERM')
-    if (process.env.REVO_DEV_KEEP_BACKEND !== '1') {
+    if (env.REVO_DEV_KEEP_BACKEND !== '1') {
       await stopBackend().catch((error) => {
         console.error(error instanceof Error ? error.message : String(error))
       })

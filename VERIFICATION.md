@@ -40,7 +40,17 @@ pnpm run gql:codegen
 ```
 
 The default download endpoint is `http://127.0.0.1:19323/graphql`. Override with
-`REVO_ADMIN_GRAPHQL_ENDPOINT` when testing another host.
+`REVO_ADMIN_GRAPHQL_ENDPOINT` or `.env/.env.development.local` when testing
+another host.
+
+## Local env files
+
+Development env files are loaded from `.env/` by Vite, backend helper scripts,
+and GraphQL codegen:
+
+- `.env/.env.development` is tracked.
+- `.env/.env.development.local.example` is tracked.
+- `.env/.env.development.local` and other `*.local` env overrides are ignored.
 
 ## Frontend MVVM checks
 
