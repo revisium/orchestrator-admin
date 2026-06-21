@@ -1,16 +1,35 @@
 import type { CodegenConfig } from '@graphql-codegen/cli'
+import { existsSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { parseEnv } from 'node:util'
 
 const args = process.argv.slice(2)
 const isDownload = args.includes('--download')
 
 const DEFAULT_GRAPHQL_ENDPOINT = 'http://127.0.0.1:19323/graphql'
+const ENV_DIR = '.env'
 const SCHEMA_SNAPSHOT = './src/__generated__/schema.graphql'
 
+function readEnvFile(filePath: string): Record<string, string> {
+  if (!existsSync(filePath)) return {}
+  return parseEnv(readFileSync(filePath, 'utf8'))
+}
+
+function loadLocalEnv(mode: string): Record<string, string> {
+  return Object.assign(
+    {},
+    readEnvFile(resolve(ENV_DIR, '.env')),
+    readEnvFile(resolve(ENV_DIR, '.env.local')),
+    readEnvFile(resolve(ENV_DIR, `.env.${mode}`)),
+    readEnvFile(resolve(ENV_DIR, `.env.${mode}.local`)),
+  )
+}
+
+const env = { ...loadLocalEnv(process.env.NODE_ENV ?? 'development'), ...process.env }
+
 const graphqlEndpoint =
-  process.env.REVO_ADMIN_GRAPHQL_ENDPOINT ??
-  (process.env.REVO_ADMIN_GRAPHQL_TARGET
-    ? `${process.env.REVO_ADMIN_GRAPHQL_TARGET}/graphql`
-    : DEFAULT_GRAPHQL_ENDPOINT)
+  env.REVO_ADMIN_GRAPHQL_ENDPOINT ??
+  (env.REVO_ADMIN_GRAPHQL_TARGET ? `${env.REVO_ADMIN_GRAPHQL_TARGET}/graphql` : DEFAULT_GRAPHQL_ENDPOINT)
 
 const scalars = {
   DateTime: 'string',

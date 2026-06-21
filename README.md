@@ -16,6 +16,12 @@ pnpm run dev       # start the React Router dev server
 
 ## Local development with backend
 
+Development env files live in `.env/`, matching the other Revisium frontends:
+
+- `.env/.env.development` — checked-in defaults for adjacent repo development;
+- `.env/.env.development.local.example` — local override template;
+- `.env/.env.development.local` — ignored machine-local overrides.
+
 The admin uses same-origin GraphQL paths in development:
 
 - browser HTTP: `/graphql`;
@@ -52,9 +58,8 @@ development separate from the dogfooding daemon under `~/.revisium-orchestrator`
 Useful overrides:
 
 ```sh
-REVO_CLI=../agent-orchestrator/bin/revo.js pnpm run dev:full
-REVO_DEV_PORT=19422 REVO_DEV_GRAPHQL_PORT=19423 REVO_DEV_PG_PORT=15640 pnpm run dev:full
-REVO_ADMIN_GRAPHQL_TARGET=http://127.0.0.1:19423 pnpm run dev
+cp .env/.env.development.local.example .env/.env.development.local
+pnpm run dev:full
 REVO_DEV_KEEP_BACKEND=1 pnpm run dev:full
 ```
 
