@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs'
+import { basename, dirname, resolve } from 'node:path'
 import { parseEnv } from 'node:util'
 import { fileURLToPath } from 'node:url'
 
@@ -35,6 +35,37 @@ const config = {
   graphqlPort: env.REVO_DEV_GRAPHQL_PORT ?? '19323',
   pgPort: env.REVO_DEV_PG_PORT ?? '15540',
   adminPort: env.REVO_ADMIN_PORT ?? '5173',
+}
+
+function isDirectory(path) {
+  try {
+    return statSync(path).isDirectory()
+  } catch {
+    return false
+  }
+}
+
+function assertLocalRevoCli() {
+  if (env.REVO_ALLOW_GLOBAL_REVO === '1') return
+  if (config.revoCli.endsWith('/agent-orchestrator/bin/revo.js')) return
+
+  const looksGlobalRevo = basename(config.revoCli) === 'revo' || !config.revoCli.endsWith('.js')
+  if (!looksGlobalRevo) return
+
+  const envDir = resolve(repoRoot, ENV_DIR)
+  const reason = isDirectory(envDir)
+    ? `This repository uses ${ENV_DIR}/ as an env directory.`
+    : `This repository is configured for adjacent agent-orchestrator development.`
+
+  throw new Error(
+    [
+      `Refusing to run global Revo CLI from orchestrator-admin local backend scripts.`,
+      reason,
+      `Set REVO_CLI=../agent-orchestrator/bin/revo.js in .env/.env.development.local,`,
+      `or run from the adjacent agent-orchestrator repository with ./bin/revo.js.`,
+      `To bypass intentionally, set REVO_ALLOW_GLOBAL_REVO=1.`,
+    ].join(' '),
+  )
 }
 
 const revoEnv = {
@@ -97,12 +128,14 @@ function spawnLong(name, command, args, options = {}) {
 }
 
 async function runRevo(args) {
+  assertLocalRevoCli()
   mkdirSync(config.dataDir, { recursive: true })
   const { command, args: commandArgs } = commandForRevo(args)
   await run(command, commandArgs, { cwd: config.dataDir, env: revoEnv })
 }
 
 function spawnRevo(args) {
+  assertLocalRevoCli()
   mkdirSync(config.dataDir, { recursive: true })
   const { command, args: commandArgs } = commandForRevo(args)
   return spawnLong('revo', command, commandArgs, { cwd: config.dataDir, env: revoEnv })

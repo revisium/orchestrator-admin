@@ -11,7 +11,7 @@ pnpm run verify
 `verify` runs the gates in order and fails fast:
 
 1. `format:check` — `prettier --check` over ts/tsx/js/json/md/yml/yaml/css/html.
-2. `gql:codegen:check` — regenerate the typed GraphQL SDK from the checked-in
+2. `gql:codegen:check` — verify the typed GraphQL SDK matches the checked-in
    schema snapshot and fail on drift in `src/__generated__/graphql-request.ts`.
 3. `ts:check` — `tsc --noEmit` (strict).
 4. `lint:ci` — `eslint "{src,tests}/**/*.{ts,tsx}" --max-warnings 0`
@@ -51,6 +51,12 @@ and GraphQL codegen:
 - `.env/.env.development` is tracked.
 - `.env/.env.development.local.example` is tracked.
 - `.env/.env.development.local` and other `*.local` env overrides are ignored.
+
+For source-development against the adjacent `agent-orchestrator` checkout,
+`REVO_CLI` must point to `../agent-orchestrator/bin/revo.js`. Do not run the
+global `revo` binary from the admin repository root: this repository contains an
+`.env/` directory, and standalone package startup can treat `.env` as a file and
+fail with `EISDIR`.
 
 ## Frontend MVVM checks
 

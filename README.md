@@ -52,6 +52,27 @@ pnpm run dev             # start React Router dev server with /graphql proxy
 pnpm run backend:stop    # stop the repo-local Revisium daemon
 ```
 
+Do not run the global `revo` binary from this repository:
+
+```sh
+# Wrong: can make standalone try to read the .env/ directory as a file.
+revo revisium start
+```
+
+For source-development against the adjacent orchestrator checkout, use the admin
+scripts above or run Revo from the orchestrator repository:
+
+```sh
+cd ../agent-orchestrator
+./bin/revo.js revisium start
+./bin/revo.js serve --port 19223
+```
+
+The local backend helper refuses global `REVO_CLI` values by default. Use
+`REVO_CLI=../agent-orchestrator/bin/revo.js` in `.env/.env.development.local`.
+Set `REVO_ALLOW_GLOBAL_REVO=1` only when intentionally testing a globally
+installed package from an isolated working directory.
+
 The backend data lives under `.revo/dev` by default. This keeps local UI
 development separate from the dogfooding daemon under `~/.revisium-orchestrator`.
 
