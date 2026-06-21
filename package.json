@@ -1,23 +1,55 @@
 {
-  "name": "@revisium/agent-orchestrator-admin",
-  "private": true,
+  "name": "@revisium/orchestrator-admin",
   "version": "0.0.0",
+  "description": "SSR admin UI for the Revisium agent orchestrator",
+  "private": false,
+  "license": "MIT",
+  "author": "Anton Kashirov",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/revisium/orchestrator-admin.git"
+  },
+  "homepage": "https://github.com/revisium/orchestrator-admin#readme",
   "type": "module",
+  "packageManager": "pnpm@11.5.2",
+  "engines": {
+    "node": ">=24.11.1 <25"
+  },
+  "files": [
+    "build/",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": "./build/server/index.js",
+    "./server": "./build/server/index.js",
+    "./client/*": "./build/client/*"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "react-router dev",
+    "dev:full": "node scripts/revo-dev.mjs dev",
+    "backend:start": "node scripts/revo-dev.mjs start",
+    "backend:serve": "node scripts/revo-dev.mjs serve",
+    "backend:stop": "node scripts/revo-dev.mjs stop",
+    "backend:status": "node scripts/revo-dev.mjs status",
+    "backend:logs": "node scripts/revo-dev.mjs logs",
     "build": "react-router build",
+    "prepublishOnly": "pnpm run build",
     "start": "cross-env PORT=8080 react-router-serve ./build/server/index.js",
     "lint:ci": "eslint \"{src,tests}/**/*.{ts,tsx}\" --max-warnings 0",
     "lint:fix": "eslint \"{src,tests}/**/*.{ts,tsx}\" --max-warnings 0 --fix",
     "fsd:check": "CHOKIDAR_USEPOLLING=1 steiger src",
     "ts:check": "tsc --noEmit",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,yml,yaml,css,html}\"",
-    "check:all": "npm run ts:check && npm run lint:ci && npm run fsd:check",
+    "check:all": "pnpm run ts:check && pnpm run lint:ci && pnpm run fsd:check",
     "test:unit": "vitest run",
     "sonar:local": "bash scripts/sonar-local.sh",
     "sonar:issues:local": "bash scripts/sonar-issues-local.sh",
     "ci:local:sonar": "bash scripts/ci-local-sonar.sh",
-    "verify": "npm run format:check && npm run ts:check && npm run lint:ci && npm run fsd:check && npm run test:unit && npm run build",
+    "verify": "pnpm run format:check && pnpm run ts:check && pnpm run lint:ci && pnpm run fsd:check && pnpm run test:unit && pnpm run build",
     "version:minor": "npm version minor --no-git-tag-version",
     "version:patch": "npm version patch --no-git-tag-version"
   },

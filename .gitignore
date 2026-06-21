@@ -5,6 +5,7 @@ coverage/
 .react-router/
 .sonar/
 .scannerwork/
+.revo/
 .env.sonar
 *.log
 .DS_Store

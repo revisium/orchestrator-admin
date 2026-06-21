@@ -1,4 +1,4 @@
-# agent-orchestrator-admin
+# orchestrator-admin
 
 Admin UI for the Revisium agent orchestrator. This repository is a child of the
 Revisium workspace and follows the canonical agent playbook in the workspace
@@ -27,7 +27,10 @@ Revisium workspace and follows the canonical agent playbook in the workspace
 
 ## Boundaries
 
-- No backend, MCP client, network calls, or `@revisium/client` in this app yet.
+- Use same-origin `/graphql` for backend access. Local development proxies that
+  path to `revo serve`; production embedding mounts GraphQL on the same host.
+- Do not import `@revisium/client` or read Revisium/DBOS state directly from the
+  admin app.
 - xyflow and other DOM-measuring widgets live only in `*.client.tsx` modules and
   are never imported server-side (see `docs/adr/0001`).
 - Theme via Chakra props and `system` tokens / `textStyles`; forced light, no

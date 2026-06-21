@@ -5,3 +5,4 @@ node_modules
 src/__generated__
 .sonar
 .scannerwork
+.revo

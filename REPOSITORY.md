@@ -1,4 +1,4 @@
-# Repository: agent-orchestrator-admin
+# Repository: orchestrator-admin
 
 Admin UI for the Revisium agent orchestrator. React Router v7 (SSR), Chakra UI v3,
 MobX, `@xyflow/react`, organized with Feature-Sliced Design (FSD).
@@ -12,6 +12,7 @@ MobX, `@xyflow/react`, organized with Feature-Sliced Design (FSD).
   local component state (`useState`) only — no view models yet.
 - `@xyflow/react` for run-progress graphs, isolated to `*.client.tsx` modules.
 - Vite 7 build; Vitest for unit tests; ESLint + Prettier + Steiger (FSD) gates.
+- Package manager is pnpm 11.5.2. Do not reintroduce `package-lock.json`.
 
 ## Layout (FSD)
 
@@ -51,6 +52,16 @@ Router v7 excludes from the server bundle. A thin `*.tsx` wrapper renders an
 SSR-safe placeholder and mounts the `.client` module after hydration. Never import
 a `.client` module from a route loader or any server-reachable module. See
 `docs/adr/0001-ssr-engine-and-client-only-graphs.md`.
+
+## Backend boundary
+
+Use GraphQL over same-origin `/graphql`.
+
+- Local dev: Vite proxies `/graphql` HTTP and WS to the `revo serve` host.
+- Production embedding: `@revisium/orchestrator` owns the HTTP server, mounts
+  GraphQL first, then mounts the React Router SSR admin fallback.
+- Do not import `@revisium/client` or use Revisium/DBOS storage APIs from this
+  app. The admin talks to the orchestrator GraphQL front door only.
 
 ## Source of truth (order)
 

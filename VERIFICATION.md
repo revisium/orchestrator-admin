@@ -1,11 +1,11 @@
-# Verification: agent-orchestrator-admin
+# Verification: orchestrator-admin
 
 ## Canonical check
 
 Run before every handoff, commit, or PR update:
 
 ```bash
-npm run verify
+pnpm run verify
 ```
 
 `verify` runs the gates in order and fails fast:
@@ -20,9 +20,9 @@ npm run verify
 
 ## CI gates (`.github/workflows/ci.yml`)
 
-- `npm ci --ignore-scripts` then `npm run verify`.
+- `corepack enable && pnpm install --frozen-lockfile --ignore-scripts` then `pnpm run verify`.
 - SonarCloud scan with `-Dsonar.qualitygate.wait=true` (uses `SONAR_TOKEN`).
-- On pull requests, `npm run sonar:issues:local` inspects open Sonar issues.
+- On pull requests, `pnpm run sonar:issues:local` inspects open Sonar issues.
 
 ## Notes
 
@@ -30,4 +30,4 @@ npm run verify
   beyond `fsd/insignificant-slice`.
 - Install must be peer-clean; do not use `--legacy-peer-deps`.
 - Local SonarCloud runs: copy `.env.sonar.example` to `.env.sonar`, then
-  `npm run sonar:local` / `npm run sonar:issues:local` (requires Docker).
+  `pnpm run sonar:local` / `pnpm run sonar:issues:local` (requires Docker).
