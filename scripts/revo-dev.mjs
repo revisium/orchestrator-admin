@@ -62,7 +62,7 @@ function assertLocalRevoCli() {
       `Refusing to run global Revo CLI from orchestrator-admin local backend scripts.`,
       reason,
       `Set REVO_CLI=../agent-orchestrator/bin/revo.js in .env/.env.development.local,`,
-      `or run from /Users/anton/projects/revisium/agent-orchestrator with ./bin/revo.js.`,
+      `or run from the adjacent agent-orchestrator repository with ./bin/revo.js.`,
       `To bypass intentionally, set REVO_ALLOW_GLOBAL_REVO=1.`,
     ].join(' '),
   )
