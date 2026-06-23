@@ -35,7 +35,14 @@ import {
 import { observer } from 'mobx-react-lite'
 import { useState, type ReactNode } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router'
-import { HOST_STATUS, INBOX_ITEMS, adrsForProject, projectById } from 'src/shared/fixtures'
+import {
+  HOST_STATUS,
+  INBOX_ITEMS,
+  adrsForProject,
+  knowledgeForProject,
+  memoryForProject,
+  projectById,
+} from 'src/shared/fixtures'
 import { useViewModel } from 'src/shared/lib'
 import { BrandLogo } from 'src/shared/ui'
 import { ProjectSwitcherViewModel, type LayoutProjectTone } from '../model/ProjectSwitcherViewModel'
@@ -93,6 +100,18 @@ const breadcrumbAdrLabel = (projectId: string, adrId: string): string => {
   return adr ? `ADR-${String(adr.number).padStart(BREADCRUMB_ADR_NUMBER_WIDTH, '0')}` : adrId.toUpperCase()
 }
 
+const breadcrumbProjectDetailLabel = (projectId: string, tab: string, detailId: string): string => {
+  if (tab === 'adrs') return breadcrumbAdrLabel(projectId, detailId)
+  if (tab === 'knowledge') {
+    return knowledgeForProject(projectId).find((article) => article.id === detailId)?.title ?? detailId
+  }
+  if (tab === 'memory') {
+    return memoryForProject(projectId).find((table) => table.id === detailId)?.name ?? detailId
+  }
+
+  return detailId
+}
+
 const projectBreadcrumbs = (segments: ReadonlyArray<string>): ReadonlyArray<BreadcrumbItem> => {
   const projectId = segments[PROJECT_ID_INDEX]
   const tab = segments[PROJECT_TAB_INDEX]
@@ -113,7 +132,7 @@ const projectBreadcrumbs = (segments: ReadonlyArray<string>): ReadonlyArray<Brea
     crumbs.push(detailId ? tabCrumb : { label: tabCrumb.label })
   }
 
-  if (tab === 'adrs' && detailId) crumbs.push({ label: breadcrumbAdrLabel(project.id, detailId) })
+  if (tab && detailId) crumbs.push({ label: breadcrumbProjectDetailLabel(project.id, tab, detailId) })
 
   return crumbs
 }

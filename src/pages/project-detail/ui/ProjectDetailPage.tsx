@@ -2,17 +2,21 @@ import { Box, Button, Center, Grid, HStack, Link as ChakraLink, Span, Stack, Tex
 import {
   ArrowRight,
   BookOpen,
+  Check,
   ChevronDown,
   ChevronLeft,
   CircleDot,
+  Command,
   Cpu,
   Database,
   GitBranch,
   GitPullRequest,
   History,
   Layers3,
+  Pencil,
   Plus,
   Rocket,
+  Terminal,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
@@ -29,6 +33,7 @@ import {
   type ProjectActivityEvent,
   type ProjectAdr,
   type ProjectKnowledgeArticle,
+  type ProjectMemoryFact,
   type ProjectMemoryTable,
   type ProjectRepository,
   type ProjectRow,
@@ -44,6 +49,16 @@ interface ProjectDetailPageProps {
 interface ProjectAdrDetailPageProps {
   readonly projectId: string
   readonly adrId: string
+}
+
+interface ProjectKnowledgeArticlePageProps {
+  readonly projectId: string
+  readonly articleId: string
+}
+
+interface ProjectMemoryTablePageProps {
+  readonly projectId: string
+  readonly tableId: string
 }
 
 interface DetailTab {
@@ -730,48 +745,84 @@ const fallbackKnowledgeCategory = (
 
 const ownerInitials = (owner: string): string => owner.slice(0, OWNER_INITIALS_LENGTH)
 
-const KnowledgeArticleCard = ({ article }: { readonly article: ProjectKnowledgeArticle }) => {
+const knowledgeArticleHref = (projectId: string, article: ProjectKnowledgeArticle): string =>
+  `/projects/${projectId}/knowledge/${article.id}`
+
+const knowledgeArticleForRouteId = (
+  articles: ReadonlyArray<ProjectKnowledgeArticle>,
+  articleId: string,
+): ProjectKnowledgeArticle | undefined => articles.find((article) => article.id === articleId)
+
+const KnowledgeArticleCard = ({
+  article,
+  projectId,
+}: {
+  readonly article: ProjectKnowledgeArticle
+  readonly projectId: string
+}) => {
   const status = article.status ?? 'committed'
   const version = article.version ?? 1
 
   return (
-    <Card p="4" minH="126px" display="flex" flexDirection="column">
-      <Stack gap="3" h="100%">
-        <HStack gap="3" align="start">
-          <Stack gap="2" minW="0" flex="1">
-            <Text textStyle="semibold-md" color="fg.0" lineHeight="1.25">
-              {article.title}
-            </Text>
-            <Text textStyle="regular-sm" color="fg.2" lineHeight="1.45">
-              {article.summary}
-            </Text>
+    <ChakraLink
+      asChild
+      display="block"
+      h="100%"
+      color="inherit"
+      _hover={{ textDecoration: 'none' }}
+      _focusVisible={{ outline: '2px solid', outlineColor: 'brand.500', outlineOffset: '3px' }}
+    >
+      <Link to={knowledgeArticleHref(projectId, article)}>
+        <Card
+          className="group"
+          p="4"
+          minH="126px"
+          h="100%"
+          display="flex"
+          flexDirection="column"
+          transition="border-color 150ms, transform 150ms"
+          _hover={{ borderColor: 'border.strong', transform: 'translateY(-1px)' }}
+        >
+          <Stack gap="3" h="100%">
+            <HStack gap="3" align="start">
+              <Stack gap="2" minW="0" flex="1">
+                <Text textStyle="semibold-md" color="fg.0" lineHeight="1.25">
+                  {article.title}
+                </Text>
+                <Text textStyle="regular-sm" color="fg.2" lineHeight="1.45">
+                  {article.summary}
+                </Text>
+              </Stack>
+              <KnowledgeStatusBadge status={status} />
+            </HStack>
+            <HStack mt="auto" gap="2" minW="0" color="fg.3" textStyle="regular-xs">
+              <Text className="mono" whiteSpace="nowrap">
+                v{version}
+              </Text>
+              <Span>·</Span>
+              <AvatarInitials label={ownerInitials(article.owner)} system={article.owner === 'orchestrator'} />
+              <Text color="fg.2" truncate minW="0">
+                {article.owner}
+              </Text>
+              <Text ml="auto" whiteSpace="nowrap">
+                {relTime(article.updatedAt)}
+              </Text>
+            </HStack>
           </Stack>
-          <KnowledgeStatusBadge status={status} />
-        </HStack>
-        <HStack mt="auto" gap="2" minW="0" color="fg.3" textStyle="regular-xs">
-          <Text className="mono" whiteSpace="nowrap">
-            v{version}
-          </Text>
-          <Span>·</Span>
-          <AvatarInitials label={ownerInitials(article.owner)} system={article.owner === 'orchestrator'} />
-          <Text color="fg.2" truncate minW="0">
-            {article.owner}
-          </Text>
-          <Text ml="auto" whiteSpace="nowrap">
-            {relTime(article.updatedAt)}
-          </Text>
-        </HStack>
-      </Stack>
-    </Card>
+        </Card>
+      </Link>
+    </ChakraLink>
   )
 }
 
 const KnowledgeCategorySection = ({
   category,
   articles,
+  projectId,
 }: {
   readonly category: (typeof KNOWLEDGE_CATEGORIES)[number]
   readonly articles: ReadonlyArray<ProjectKnowledgeArticle>
+  readonly projectId: string
 }) => {
   const Icon = category.icon
 
@@ -787,14 +838,20 @@ const KnowledgeCategorySection = ({
       </HStack>
       <Grid templateColumns={{ base: '1fr', xl: 'repeat(2, minmax(0, 1fr))' }} gap="4">
         {articles.map((article) => (
-          <KnowledgeArticleCard key={article.id} article={article} />
+          <KnowledgeArticleCard key={article.id} article={article} projectId={projectId} />
         ))}
       </Grid>
     </Stack>
   )
 }
 
-const KnowledgeList = ({ articles }: { readonly articles: ReadonlyArray<ProjectKnowledgeArticle> }) => {
+const KnowledgeList = ({
+  articles,
+  projectId,
+}: {
+  readonly articles: ReadonlyArray<ProjectKnowledgeArticle>
+  readonly projectId: string
+}) => {
   if (articles.length === 0) {
     return <EmptyState title="No knowledge articles yet" description="Project knowledge will appear after ingestion." />
   }
@@ -805,6 +862,7 @@ const KnowledgeList = ({ articles }: { readonly articles: ReadonlyArray<ProjectK
         <KnowledgeCategorySection
           key={category.id}
           category={category}
+          projectId={projectId}
           articles={articles.filter(
             (article) => (article.category ?? fallbackKnowledgeCategory(article)) === category.id,
           )}
@@ -814,95 +872,467 @@ const KnowledgeList = ({ articles }: { readonly articles: ReadonlyArray<ProjectK
   )
 }
 
-const MemoryFactList = ({ table }: { readonly table: ProjectMemoryTable }) => (
-  <Stack gap="2">
-    {table.facts.map((fact) => (
-      <HStack key={fact.id} align="start" gap="2.5">
-        <Box w="1.5" h="1.5" mt="2" borderRadius="full" bg="dot.running" flexShrink="0" />
-        <Stack gap="0.5" minW="0">
-          <Text textStyle="regular-sm" color="fg.1" lineHeight="1.45">
-            {fact.text}
-          </Text>
-          <Text className="mono" textStyle="regular-micro" color="fg.3">
-            {fact.source} · {fact.sourceId}
-          </Text>
-        </Stack>
-      </HStack>
-    ))}
-  </Stack>
+const KnowledgeDocSection = ({ title, children }: { readonly title: string; readonly children: ReactNode }) => (
+  <Box borderTopWidth="1px" borderColor="border" pt="4">
+    <Text color="fg.0" textStyle="semibold-sm" mb="2">
+      {title}
+    </Text>
+    <Box color="fg.2" textStyle="regular-sm" lineHeight="1.6">
+      {children}
+    </Box>
+  </Box>
 )
 
-const MemoryList = ({
-  tables,
-  compact = false,
+const KnowledgeArticleDetail = ({
+  article,
+  project,
 }: {
-  readonly tables: ReadonlyArray<ProjectMemoryTable>
-  readonly compact?: boolean
-}) => (
-  <Grid templateColumns={{ base: '1fr', xl: compact ? '1fr' : 'repeat(2, minmax(0, 1fr))' }} gap="4">
-    {tables.length === 0 ? (
-      <Box gridColumn="1 / -1">
-        <EmptyState title="No memory tables yet" description="Project memory will appear once agents learn facts." />
-      </Box>
-    ) : (
-      tables.map((table) => (
-        <Card key={table.id} p="0" overflow="hidden">
-          <Stack gap="0">
-            <Box px="4.5" py="4" borderBottomWidth="1px" borderColor="border.subtle">
-              <HStack gap="3" align="start">
-                <Center
-                  boxSize="34px"
-                  borderRadius="8px"
-                  bg="bg.inset"
-                  borderWidth="1px"
-                  borderColor="border"
-                  color="fg.2"
-                  flexShrink="0"
-                >
-                  <Database size={16} />
-                </Center>
-                <Stack gap="1.5" minW="0" flex="1">
-                  <HStack gap="2" wrap="wrap">
-                    <MemoryKindBadge kind={table.kind} />
-                    <Text className="mono" textStyle="regular-xs" color="fg.3">
-                      {absTime(table.updatedAt)}
-                    </Text>
-                  </HStack>
-                  <Text className="mono" textStyle="semibold-sm" color="fg.0" truncate>
-                    {table.name}
-                  </Text>
-                  <Text textStyle="regular-sm" color="fg.2" lineHeight="1.5">
-                    {table.description}
-                  </Text>
-                </Stack>
+  readonly article: ProjectKnowledgeArticle
+  readonly project: ProjectRow
+}) => {
+  const status = article.status ?? 'committed'
+  const version = article.version ?? 1
+  const category = article.category ?? fallbackKnowledgeCategory(article)
+
+  return (
+    <Stack gap="5">
+      <ChakraLink
+        asChild
+        alignSelf="flex-start"
+        display="inline-flex"
+        alignItems="center"
+        gap="2"
+        color="fg.2"
+        fontSize="18px"
+        fontWeight="520"
+        lineHeight="1"
+        _hover={{ color: 'fg.0', textDecoration: 'none' }}
+      >
+        <Link to={`/projects/${project.id}/knowledge`}>
+          <ChevronLeft size={19} />
+          Knowledge base
+        </Link>
+      </ChakraLink>
+      <Grid templateColumns={{ base: '1fr', xl: 'minmax(0, 1.55fr) minmax(320px, 0.75fr)' }} gap="5" alignItems="start">
+        <Card p="5">
+          <Stack gap="5">
+            <Stack gap="3">
+              <HStack gap="2" wrap="wrap">
+                <AccentKnowledgeCategory category={category} />
+                <KnowledgeStatusBadge status={status} />
               </HStack>
-            </Box>
-            <Grid
-              templateColumns={{ base: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' }}
-              borderBottomWidth="1px"
-              borderColor="border.subtle"
-            >
-              <MemoryMetric label="Records" value={table.records} />
-              <MemoryMetric label="Owner" value={table.owner} />
-              <MemoryMetric label="Run" value={table.linkedRunId} to={`/runs/${table.linkedRunId}`} />
-              <MemoryMetric label="ADR" value={table.linkedAdrId.replace('adr_', '')} />
-            </Grid>
-            <Box px="4.5" py="4">
-              <MemoryFactList table={table} />
-              {compact ? null : (
-                <HStack gap="1.5" wrap="wrap" mt="3.5">
-                  {table.tags.map((tag) => (
-                    <TagPill key={tag}>{tag}</TagPill>
-                  ))}
-                </HStack>
-              )}
-            </Box>
+              <Text color="fg.0" fontSize={{ base: '25px', md: '28px' }} fontWeight="720" lineHeight="1.1">
+                {article.title}
+              </Text>
+              <Text color="fg.2" textStyle="regular-body" lineHeight="1.55" maxW="760px">
+                {article.summary}
+              </Text>
+            </Stack>
+            <KnowledgeDocSection title="What agents read">
+              <Text>
+                This article is projected into run context when the route touches{' '}
+                <Span className="mono">{article.repo}</Span>. It keeps the reusable product fact separate from
+                high-churn events and inbox decisions.
+              </Text>
+            </KnowledgeDocSection>
+            <KnowledgeDocSection title="Operational guidance">
+              <Stack as="ul" gap="2" pl="4">
+                {article.tags.map((tag) => (
+                  <Text as="li" key={tag}>
+                    Preserve the <Span className="mono">{tag}</Span> convention when changing related screens or
+                    fixtures.
+                  </Text>
+                ))}
+              </Stack>
+            </KnowledgeDocSection>
+            <KnowledgeDocSection title="Source">
+              <Text>
+                Captured from <Span className="mono">{article.source}</Span> data in{' '}
+                <Span className="mono">{project.key}</Span>.
+              </Text>
+            </KnowledgeDocSection>
           </Stack>
         </Card>
-      ))
-    )}
-  </Grid>
+        <Stack gap="4">
+          <Card p="5">
+            <Stack gap="3">
+              <HStack gap="2" color="fg.1">
+                <History size={15} />
+                <Text textStyle="semibold-md">Version</Text>
+              </HStack>
+              <Text className="mono" color="fg.0" textStyle="semibold-sm">
+                v{version} · committed head
+              </Text>
+              <Text color="fg.2" textStyle="regular-sm" lineHeight="1.5">
+                Versioned data in Revisium. Edits open a draft; committing creates a new revision with diff and review.
+              </Text>
+              <Stack gap="2">
+                <Button
+                  size="sm"
+                  h="34px"
+                  px="3.5"
+                  gap="2"
+                  bg="bg.1"
+                  color="fg.0"
+                  borderWidth="1px"
+                  borderColor="border.strong"
+                  borderRadius="btn"
+                  disabled
+                  _disabled={{ opacity: 0.58, cursor: 'not-allowed' }}
+                >
+                  <Pencil size={14} />
+                  Edit draft
+                </Button>
+                <Button
+                  size="sm"
+                  h="34px"
+                  px="3.5"
+                  gap="2"
+                  bg="transparent"
+                  color="fg.1"
+                  borderWidth="1px"
+                  borderColor="border"
+                  borderRadius="btn"
+                  disabled
+                  _disabled={{ opacity: 0.58, cursor: 'not-allowed' }}
+                >
+                  <History size={14} />
+                  History
+                </Button>
+              </Stack>
+            </Stack>
+          </Card>
+          <Card p="5">
+            <Stack gap="3">
+              <Text color="fg.0" textStyle="semibold-md">
+                Article metadata
+              </Text>
+              <Stack gap="0">
+                <AdrDetailMetaRow label="Owner">
+                  <HStack gap="2" minW="0">
+                    <AvatarInitials label={ownerInitials(article.owner)} system={article.owner === 'orchestrator'} />
+                    <Text color="fg.1" textStyle="regular-sm" truncate>
+                      {article.owner}
+                    </Text>
+                  </HStack>
+                </AdrDetailMetaRow>
+                <AdrDetailMetaRow label="Updated">{relTime(article.updatedAt)}</AdrDetailMetaRow>
+                <AdrDetailMetaRow label="Repository">
+                  <Text className="mono" color="fg.1" textStyle="regular-xs" truncate>
+                    {article.repo}
+                  </Text>
+                </AdrDetailMetaRow>
+              </Stack>
+            </Stack>
+          </Card>
+        </Stack>
+      </Grid>
+    </Stack>
+  )
+}
+
+const AccentKnowledgeCategory = ({
+  category,
+}: {
+  readonly category: NonNullable<ProjectKnowledgeArticle['category']>
+}) => {
+  const meta = KNOWLEDGE_CATEGORIES.find((item) => item.id === category) ?? KNOWLEDGE_CATEGORIES[0]
+  const Icon = meta.icon
+
+  return (
+    <HStack
+      as="span"
+      h="6"
+      px="2.5"
+      gap="1.5"
+      borderRadius="chip"
+      borderWidth="1px"
+      borderColor="brand.softBorder"
+      bg="brand.soft"
+      color="brand.ink"
+      textStyle="medium-sm"
+      whiteSpace="nowrap"
+    >
+      <Icon size={13} />
+      {meta.label}
+    </HStack>
+  )
+}
+
+const memoryTableHref = (projectId: string, table: ProjectMemoryTable): string =>
+  `/projects/${projectId}/memory/${table.id}`
+
+const memoryTableForRouteId = (
+  tables: ReadonlyArray<ProjectMemoryTable>,
+  tableId: string,
+): ProjectMemoryTable | undefined => tables.find((table) => table.id === tableId)
+
+const MemoryTableCard = ({
+  active,
+  projectId,
+  table,
+}: {
+  readonly active: boolean
+  readonly projectId: string
+  readonly table: ProjectMemoryTable
+}) => (
+  <ChakraLink
+    asChild
+    display="grid"
+    gridTemplateColumns="32px minmax(0, 1fr) auto"
+    alignItems="center"
+    gap="3"
+    px="3.5"
+    py="3"
+    borderRadius="9px"
+    borderWidth="1px"
+    borderColor={active ? 'brand.softBorder' : 'border'}
+    bg={active ? 'brand.soft' : 'bg.1'}
+    color="inherit"
+    _hover={{ borderColor: 'border.strong', textDecoration: 'none' }}
+    _focusVisible={{ outline: '2px solid', outlineColor: 'brand.500', outlineOffset: '2px' }}
+  >
+    <Link to={memoryTableHref(projectId, table)}>
+      <Center boxSize="32px" borderRadius="8px" bg="bg.inset" borderWidth="1px" borderColor="border" color="fg.2">
+        <Database size={15} />
+      </Center>
+      <Stack gap="0.5" minW="0">
+        <Text className="mono" textStyle="semibold-sm" color="fg.0" truncate>
+          {table.name}
+        </Text>
+        <Text textStyle="regular-xs" color="fg.2" truncate>
+          {table.description}
+        </Text>
+      </Stack>
+      <Text className="mono tnum" color="fg.3" textStyle="regular-xs">
+        {table.records}
+      </Text>
+    </Link>
+  </ChakraLink>
 )
+
+const MemorySchema = () => {
+  const columns = [
+    { name: 'fact_id', type: 'string', primary: true },
+    { name: 'source', type: 'enum', primary: false },
+    { name: 'source_id', type: 'string', primary: false },
+    { name: 'fact', type: 'text', primary: false },
+  ] as const
+
+  return (
+    <Box borderTopWidth="1px" borderColor="border" pt="4">
+      <HStack gap="2" color="fg.1" mb="3">
+        <Layers3 size={14} />
+        <Text textStyle="semibold-sm">Schema · {columns.length} columns</Text>
+      </HStack>
+      <Grid templateColumns={{ base: '1fr', md: 'repeat(2, minmax(0, 1fr))' }} gap="2.5">
+        {columns.map((column) => (
+          <HStack
+            key={column.name}
+            gap="2"
+            px="3"
+            py="2.5"
+            borderRadius="8px"
+            borderWidth="1px"
+            borderColor="border"
+            bg="bg.inset"
+            minW="0"
+          >
+            <Text className="mono" textStyle="medium-xs" color="fg.0" truncate>
+              {column.name}
+            </Text>
+            {column.primary ? (
+              <Span px="1.5" borderRadius="4px" bg="brand.soft" color="brand.ink" textStyle="semibold-micro">
+                pk
+              </Span>
+            ) : null}
+            <Span
+              ml="auto"
+              px="2"
+              h="5"
+              borderRadius="chip"
+              bg="accent.role.bg"
+              color="accent.role.fg"
+              textStyle="medium-xs"
+            >
+              {column.type}
+            </Span>
+          </HStack>
+        ))}
+      </Grid>
+    </Box>
+  )
+}
+
+const MemorySampleRows = ({ table }: { readonly table: ProjectMemoryTable }) => (
+  <Box borderTopWidth="1px" borderColor="border" pt="4" containerType="inline-size">
+    <HStack gap="2" color="fg.1" mb="3">
+      <Terminal size={14} />
+      <Text textStyle="semibold-sm">Sample rows</Text>
+      <Text className="mono" color="fg.3" textStyle="regular-micro">
+        read by agents at buildContext
+      </Text>
+    </HStack>
+    <Card p="0" overflowX="auto" boxShadow="none">
+      <Grid
+        templateColumns="150px 96px 140px minmax(280px, 1fr)"
+        gap="3"
+        minW="720px"
+        h="38px"
+        alignItems="center"
+        px="4"
+        bg="bg.inset"
+        borderBottomWidth="1px"
+        borderColor="border"
+      >
+        <RepoHeaderCell>fact_id</RepoHeaderCell>
+        <RepoHeaderCell>source</RepoHeaderCell>
+        <RepoHeaderCell>source_id</RepoHeaderCell>
+        <RepoHeaderCell>fact</RepoHeaderCell>
+      </Grid>
+      {table.facts.map((fact) => (
+        <Grid
+          key={fact.id}
+          templateColumns="150px 96px 140px minmax(280px, 1fr)"
+          gap="3"
+          minW="720px"
+          alignItems="start"
+          px="4"
+          py="3"
+          borderBottomWidth="1px"
+          borderColor="border.subtle"
+          _last={{ borderBottomWidth: '0' }}
+        >
+          <Text className="mono" color="fg.1" textStyle="regular-xs" truncate>
+            {fact.id}
+          </Text>
+          <MemorySourceBadge source={fact.source} />
+          <Text className="mono" color="fg.1" textStyle="regular-xs" truncate>
+            {fact.sourceId}
+          </Text>
+          <Text color="fg.1" textStyle="regular-sm" lineHeight="1.45">
+            {fact.text}
+          </Text>
+        </Grid>
+      ))}
+    </Card>
+    {table.records > table.facts.length ? (
+      <Text mt="2.5" color="fg.3" textStyle="regular-xs">
+        +{table.records - table.facts.length} more rows
+      </Text>
+    ) : null}
+  </Box>
+)
+
+const MemorySourceBadge = ({ source }: { readonly source: ProjectMemoryFact['source'] }) => {
+  const palette = {
+    adr: { fg: 'brand.ink', bg: 'brand.soft', border: 'brand.softBorder' },
+    manual: { fg: 'accent.role.fg', bg: 'accent.role.bg', border: 'accent.role.border' },
+    run: { fg: 'status.running.fg', bg: 'status.running.bg', border: 'status.running.border' },
+  }[source]
+
+  return (
+    <Span
+      px="2"
+      h="5"
+      display="inline-flex"
+      alignItems="center"
+      width="fit-content"
+      borderRadius="chip"
+      borderWidth="1px"
+      color={palette.fg}
+      bg={palette.bg}
+      borderColor={palette.border}
+      textStyle="medium-xs"
+    >
+      {source}
+    </Span>
+  )
+}
+
+const MemoryTableDetail = ({ table }: { readonly table: ProjectMemoryTable }) => (
+  <Card p="0" overflow="hidden">
+    <Stack gap="0">
+      <Box px="5" py="4.5" borderBottomWidth="1px" borderColor="border.subtle">
+        <HStack gap="3" justify="space-between" align="start">
+          <HStack gap="3" minW="0" align="start">
+            <Center boxSize="38px" borderRadius="9px" bg="bg.inset" borderWidth="1px" borderColor="border" color="fg.2">
+              <Database size={18} />
+            </Center>
+            <Stack gap="1" minW="0">
+              <Text className="mono" textStyle="semibold-md" color="fg.0" truncate>
+                {table.name}
+              </Text>
+              <Text textStyle="regular-sm" color="fg.2" lineHeight="1.5">
+                {table.description}
+              </Text>
+            </Stack>
+          </HStack>
+          <Stack align="flex-end" gap="2" flexShrink="0">
+            <MemoryKindBadge kind={table.kind} />
+            <Text className="mono" color="fg.3" textStyle="regular-xs">
+              {table.records} rows
+            </Text>
+          </Stack>
+        </HStack>
+      </Box>
+      <Grid
+        templateColumns={{ base: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' }}
+        borderBottomWidth="1px"
+        borderColor="border.subtle"
+      >
+        <MemoryMetric label="Records" value={table.records} />
+        <MemoryMetric label="Owner" value={table.owner} />
+        <MemoryMetric label="Run" value={table.linkedRunId} to={`/runs/${table.linkedRunId}`} />
+        <MemoryMetric label="ADR" value={table.linkedAdrId.replace('adr_', '')} />
+      </Grid>
+      <Stack gap="4.5" px="5" py="4.5">
+        <MemorySchema />
+        <MemorySampleRows table={table} />
+        <HStack gap="1.5" wrap="wrap">
+          {table.tags.map((tag) => (
+            <TagPill key={tag}>{tag}</TagPill>
+          ))}
+        </HStack>
+      </Stack>
+    </Stack>
+  </Card>
+)
+
+const MemoryBrowser = ({
+  project,
+  selectedTableId,
+  tables,
+}: {
+  readonly project: ProjectRow
+  readonly selectedTableId?: string
+  readonly tables: ReadonlyArray<ProjectMemoryTable>
+}) => {
+  if (tables.length === 0) {
+    return <EmptyState title="No memory tables yet" description="Project memory will appear once agents learn facts." />
+  }
+
+  const selectedTable = memoryTableForRouteId(tables, selectedTableId ?? '') ?? tables[0]
+
+  return (
+    <Grid templateColumns={{ base: '1fr', xl: 'minmax(270px, 0.5fr) minmax(0, 1.5fr)' }} gap="5" alignItems="start">
+      <Stack gap="3">
+        <HStack justify="space-between" align="center">
+          <Text color="fg.2" textStyle="semibold-sm">
+            Tables
+          </Text>
+          <Text className="mono tnum" color="fg.3" textStyle="regular-xs">
+            {tables.length}
+          </Text>
+        </HStack>
+        {tables.map((table) => (
+          <MemoryTableCard key={table.id} projectId={project.id} table={table} active={table.id === selectedTable.id} />
+        ))}
+      </Stack>
+      <MemoryTableDetail table={selectedTable} />
+    </Grid>
+  )
+}
 
 const MemoryMetric = ({
   label,
@@ -1256,14 +1686,22 @@ const KnowledgeTab = ({
         New article
       </Button>
     </HStack>
-    <KnowledgeList articles={articles} />
+    <KnowledgeList articles={articles} projectId={project.id} />
   </Stack>
 )
 
-const MemoryTab = ({ tables }: { readonly tables: ReadonlyArray<ProjectMemoryTable> }) => (
+const MemoryTab = ({
+  project,
+  selectedTableId,
+  tables,
+}: {
+  readonly project: ProjectRow
+  readonly selectedTableId?: string
+  readonly tables: ReadonlyArray<ProjectMemoryTable>
+}) => (
   <Stack gap="4">
     <SectionHead title="Project memory" />
-    <MemoryList tables={tables} />
+    <MemoryBrowser project={project} selectedTableId={selectedTableId} tables={tables} />
   </Stack>
 )
 
@@ -1395,6 +1833,211 @@ const AdrDetailMetaRow = ({ label, children }: { readonly label: string; readonl
   </Grid>
 )
 
+const AdrSection = ({
+  children,
+  comments,
+  title,
+}: {
+  readonly children: ReactNode
+  readonly comments?: number
+  readonly title: string
+}) => (
+  <Box borderTopWidth="1px" borderColor="border" pt="4">
+    <HStack gap="2" mb="2">
+      <Text color="fg.0" textStyle="semibold-sm">
+        {title}
+      </Text>
+      {comments ? (
+        <HStack
+          as="span"
+          h="5"
+          px="2"
+          gap="1"
+          borderRadius="chip"
+          bg="bg.inset"
+          borderWidth="1px"
+          borderColor="border"
+          color="fg.3"
+          textStyle="regular-micro"
+        >
+          <Command size={11} />
+          {comments}
+        </HStack>
+      ) : null}
+    </HStack>
+    <Box color="fg.2" textStyle="regular-sm" lineHeight="1.6">
+      {children}
+    </Box>
+  </Box>
+)
+
+const AdrLinkedRun = ({ adr }: { readonly adr: ProjectAdr }) => (
+  <ChakraLink
+    asChild
+    display="grid"
+    gridTemplateColumns="34px minmax(0, 1fr) auto"
+    alignItems="center"
+    gap="3"
+    p="3.5"
+    borderRadius="10px"
+    borderWidth="1px"
+    borderColor="brand.softBorder"
+    bg="brand.soft"
+    color="inherit"
+    _hover={{ textDecoration: 'none', borderColor: 'brand.500' }}
+  >
+    <Link to={`/runs/${adr.runId}`}>
+      <Center boxSize="34px" borderRadius="8px" bg="bg.1" color="brand.500">
+        <GitBranch size={16} />
+      </Center>
+      <Stack gap="0.5" minW="0">
+        <Text color="fg.0" textStyle="semibold-sm">
+          Linked to a run
+        </Text>
+        <Text color="fg.2" textStyle="regular-xs">
+          Authored during task execution; reviewers can trace the decision back to the run.
+        </Text>
+      </Stack>
+      <HStack gap="1.5" color="brand.500" textStyle="medium-xs">
+        <Span className="mono">{adr.runId}</Span>
+        <ArrowRight size={13} />
+      </HStack>
+    </Link>
+  </ChakraLink>
+)
+
+const AdrOption = ({
+  chosen,
+  note,
+  title,
+}: {
+  readonly chosen?: boolean
+  readonly note: string
+  readonly title: string
+}) => (
+  <Box
+    p="3"
+    borderRadius="9px"
+    borderWidth="1px"
+    borderColor={chosen ? 'brand.softBorder' : 'border'}
+    bg={chosen ? 'brand.soft' : 'bg.inset'}
+  >
+    <HStack gap="2" mb="1">
+      {chosen ? (
+        <Center boxSize="18px" borderRadius="full" bg="brand.500" color="brand.on">
+          <Check size={12} />
+        </Center>
+      ) : null}
+      <Text color="fg.0" textStyle="semibold-sm">
+        {title}
+      </Text>
+    </HStack>
+    <Text color="fg.2" textStyle="regular-sm" lineHeight="1.5">
+      {note}
+    </Text>
+  </Box>
+)
+
+const AdrReviewPanel = ({ adr }: { readonly adr: ProjectAdr }) => {
+  const status = revisionStatus(adr.status)
+  const note =
+    adr.status === 'proposed'
+      ? 'Proposed decision — needs review before it can be committed to the project head.'
+      : 'Committed to head — rollback creates a new revision rather than mutating history.'
+
+  return (
+    <Card p="5">
+      <Stack gap="3">
+        <Text color="fg.0" textStyle="semibold-md">
+          Review
+        </Text>
+        <CompactDecisionStatus status={status} />
+        <Text color="fg.2" textStyle="regular-sm" lineHeight="1.5">
+          {note}
+        </Text>
+        {adr.status === 'proposed' ? (
+          <Stack gap="2">
+            <Button
+              size="sm"
+              h="34px"
+              px="3.5"
+              gap="2"
+              bg="status.success.fg"
+              color="white"
+              borderRadius="btn"
+              disabled
+              _disabled={{ opacity: 0.58, cursor: 'not-allowed' }}
+            >
+              <Check size={14} />
+              Commit
+            </Button>
+            <Button
+              size="sm"
+              h="34px"
+              px="3.5"
+              gap="2"
+              bg="bg.1"
+              color="fg.0"
+              borderWidth="1px"
+              borderColor="border.strong"
+              borderRadius="btn"
+              disabled
+              _disabled={{ opacity: 0.58, cursor: 'not-allowed' }}
+            >
+              <Pencil size={14} />
+              Edit draft
+            </Button>
+          </Stack>
+        ) : null}
+      </Stack>
+    </Card>
+  )
+}
+
+const AdrHistoryPanel = ({ adr }: { readonly adr: ProjectAdr }) => {
+  const revisions = [
+    { id: 'head', label: 'Committed head', rev: 'head', time: adr.createdAt },
+    { id: 'review', label: 'Reviewer notes resolved', rev: 'review', time: adr.createdAt },
+    { id: 'draft', label: 'Initial draft opened', rev: 'draft', time: adr.createdAt },
+  ] as const
+
+  return (
+    <Card p="0" overflow="hidden">
+      <HStack gap="2" px="4" py="3.5" borderBottomWidth="1px" borderColor="border">
+        <History size={14} />
+        <Text color="fg.0" textStyle="semibold-sm">
+          Version history
+        </Text>
+      </HStack>
+      <Stack gap="0" px="4" py="2">
+        {revisions.map((revision) => (
+          <Grid
+            key={revision.id}
+            templateColumns="72px minmax(0, 1fr)"
+            gap="3"
+            py="3"
+            borderBottomWidth="1px"
+            borderColor="border.subtle"
+            _last={{ borderBottomWidth: '0' }}
+          >
+            <Text className="mono" color={revision.id === 'head' ? 'brand.500' : 'fg.3'} textStyle="medium-xs">
+              {revision.rev}
+            </Text>
+            <Stack gap="0.5" minW="0">
+              <Text color="fg.0" textStyle="regular-sm">
+                {revision.label}
+              </Text>
+              <Text color="fg.3" textStyle="regular-xs">
+                {adr.owner} · {relTime(revision.time)}
+              </Text>
+            </Stack>
+          </Grid>
+        ))}
+      </Stack>
+    </Card>
+  )
+}
+
 const AdrDetail = ({ project, adr }: { readonly project: ProjectRow; readonly adr: ProjectAdr }) => (
   <Stack gap="5">
     <ChakraLink
@@ -1441,50 +2084,113 @@ const AdrDetail = ({ project, adr }: { readonly project: ProjectRow; readonly ad
               <TagPill key={tag}>{tag}</TagPill>
             ))}
           </HStack>
+          <AdrLinkedRun adr={adr} />
+          <AdrSection title="Context">
+            <Text>
+              {adr.summary} The decision belongs to <Span className="mono">{project.key}</Span> and is read alongside
+              project knowledge, memory, active runs, and review gates.
+            </Text>
+          </AdrSection>
+          <AdrSection title="Decision" comments={linkedCountForAdr(adr)}>
+            <Text>
+              Keep this behavior aligned with the versioned method. Implementation work may change files, but the
+              meaning captured here changes only through a new ADR revision.
+            </Text>
+          </AdrSection>
+          <AdrSection title="Consequences">
+            <Stack as="ul" gap="2" pl="4">
+              <Text as="li">Agents can cite this ADR while building context for related runs.</Text>
+              <Text as="li">Reviewers can trace the decision back to source repository and task run.</Text>
+              <Text as="li">Superseding the decision creates a new explicit revision path.</Text>
+            </Stack>
+          </AdrSection>
+          <AdrSection title="Options considered">
+            <Stack gap="3">
+              <AdrOption
+                chosen
+                title="Version the decision"
+                note="Chosen: keep durable product meaning in project history."
+              />
+              <AdrOption
+                title="Keep it as runtime state"
+                note="Rejected: inbox and events are high-churn signals, not durable meaning."
+              />
+            </Stack>
+          </AdrSection>
           <Box borderTopWidth="1px" borderColor="border" pt="4">
-            <Text color="fg.0" textStyle="semibold-sm" mb="2">
-              Decision
-            </Text>
-            <Text color="fg.2" textStyle="regular-sm" lineHeight="1.55">
-              This ADR records the current project decision and keeps implementation work aligned with the versioned
-              method, active runs, and reviewer gates.
-            </Text>
+            <HStack gap="2" mb="3">
+              <Command size={14} />
+              <Text color="fg.0" textStyle="semibold-sm">
+                Add a comment
+              </Text>
+            </HStack>
+            <Box
+              minH="70px"
+              p="3"
+              borderRadius="9px"
+              borderWidth="1px"
+              borderColor="border"
+              bg="bg.inset"
+              color="fg.3"
+              textStyle="regular-sm"
+            >
+              Leave a review comment...
+            </Box>
+            <Button
+              mt="3"
+              size="sm"
+              h="34px"
+              px="3.5"
+              gap="2"
+              bg="brand.500"
+              color="brand.on"
+              borderRadius="btn"
+              disabled
+              _disabled={{ opacity: 0.58, cursor: 'not-allowed' }}
+            >
+              <Check size={14} />
+              Comment
+            </Button>
           </Box>
         </Stack>
       </Card>
-      <Card p="5">
-        <Stack gap="3">
-          <Text color="fg.0" textStyle="semibold-md">
-            ADR metadata
-          </Text>
-          <Stack gap="0">
-            <AdrDetailMetaRow label="Author">
-              <HStack gap="2" minW="0">
-                <AvatarInitials label={ownerInitials(adr.owner)} system={adr.owner === 'orchestrator'} />
-                <Text color="fg.1" textStyle="regular-sm" truncate>
-                  {adr.owner}
+      <Stack gap="4">
+        <AdrReviewPanel adr={adr} />
+        <AdrHistoryPanel adr={adr} />
+        <Card p="5">
+          <Stack gap="3">
+            <Text color="fg.0" textStyle="semibold-md">
+              ADR metadata
+            </Text>
+            <Stack gap="0">
+              <AdrDetailMetaRow label="Author">
+                <HStack gap="2" minW="0">
+                  <AvatarInitials label={ownerInitials(adr.owner)} system={adr.owner === 'orchestrator'} />
+                  <Text color="fg.1" textStyle="regular-sm" truncate>
+                    {adr.owner}
+                  </Text>
+                </HStack>
+              </AdrDetailMetaRow>
+              <AdrDetailMetaRow label="Updated">{relTime(adr.createdAt)}</AdrDetailMetaRow>
+              <AdrDetailMetaRow label="Repository">
+                <Text className="mono" color="fg.1" textStyle="regular-xs" truncate>
+                  {adr.repo}
                 </Text>
-              </HStack>
-            </AdrDetailMetaRow>
-            <AdrDetailMetaRow label="Updated">{relTime(adr.createdAt)}</AdrDetailMetaRow>
-            <AdrDetailMetaRow label="Repository">
-              <Text className="mono" color="fg.1" textStyle="regular-xs" truncate>
-                {adr.repo}
-              </Text>
-            </AdrDetailMetaRow>
-            <AdrDetailMetaRow label="Run">
-              <ChakraLink
-                asChild
-                color="brand.500"
-                textStyle="medium-xs"
-                _hover={{ color: 'brand.hover', textDecoration: 'none' }}
-              >
-                <Link to={`/runs/${adr.runId}`}>{adr.runId}</Link>
-              </ChakraLink>
-            </AdrDetailMetaRow>
+              </AdrDetailMetaRow>
+              <AdrDetailMetaRow label="Run">
+                <ChakraLink
+                  asChild
+                  color="brand.500"
+                  textStyle="medium-xs"
+                  _hover={{ color: 'brand.hover', textDecoration: 'none' }}
+                >
+                  <Link to={`/runs/${adr.runId}`}>{adr.runId}</Link>
+                </ChakraLink>
+              </AdrDetailMetaRow>
+            </Stack>
           </Stack>
-        </Stack>
-      </Card>
+        </Card>
+      </Stack>
     </Grid>
   </Stack>
 )
@@ -1513,6 +2219,49 @@ export const ProjectAdrDetailPage = ({ projectId, adrId }: ProjectAdrDetailPageP
   )
 }
 
+export const ProjectKnowledgeArticlePage = ({ projectId, articleId }: ProjectKnowledgeArticlePageProps) => {
+  const project = projectById(projectId)
+  if (!project) {
+    return <EmptyState title="Project not found" description="The requested project does not exist." />
+  }
+
+  const repositories = reposForProject(project.id)
+  const articles = knowledgeForProject(project.id)
+  const tabs = tabsForProject(project, repositories)
+  const article = knowledgeArticleForRouteId(articles, articleId)
+
+  return (
+    <Stack gap="6">
+      <DetailHeader project={project} />
+      <DetailTabs project={project} tabs={tabs} activeTab="knowledge" />
+      {article ? (
+        <KnowledgeArticleDetail article={article} project={project} />
+      ) : (
+        <EmptyState title="Article not found" description="The requested knowledge article does not exist." />
+      )}
+    </Stack>
+  )
+}
+
+export const ProjectMemoryTablePage = ({ projectId, tableId }: ProjectMemoryTablePageProps) => {
+  const project = projectById(projectId)
+  if (!project) {
+    return <EmptyState title="Project not found" description="The requested project does not exist." />
+  }
+
+  const repositories = reposForProject(project.id)
+  const memoryTables = memoryForProject(project.id)
+  const tabs = tabsForProject(project, repositories)
+
+  return (
+    <Stack gap="6">
+      <DetailHeader project={project} />
+      <DetailTabs project={project} tabs={tabs} activeTab="memory" />
+      <MemoryTab project={project} tables={memoryTables} selectedTableId={tableId} />
+    </Stack>
+  )
+}
+
 export const ProjectDetailPage = ({ projectId, tab }: ProjectDetailPageProps) => {
   const project = projectById(projectId)
   if (!project) {
@@ -1537,7 +2286,7 @@ export const ProjectDetailPage = ({ projectId, tab }: ProjectDetailPageProps) =>
       {activeTab === 'repositories' ? <RepositoriesTab repositories={repositories} /> : null}
       {activeTab === 'knowledge' ? <KnowledgeTab project={project} articles={articles} /> : null}
       {activeTab === 'adrs' ? <AdrsTab adrs={adrs} /> : null}
-      {activeTab === 'memory' ? <MemoryTab tables={memoryTables} /> : null}
+      {activeTab === 'memory' ? <MemoryTab project={project} tables={memoryTables} /> : null}
       {activeTab === 'activity' ? <ActivityTab events={activity} /> : null}
     </Stack>
   )
