@@ -1,4 +1,4 @@
-# Repository: agent-orchestrator-admin
+# Repository: orchestrator-admin
 
 Admin UI for the Revisium agent orchestrator. React Router v7 (SSR), Chakra UI v3,
 MobX, `@xyflow/react`, organized with Feature-Sliced Design (FSD).
@@ -8,10 +8,12 @@ MobX, `@xyflow/react`, organized with Feature-Sliced Design (FSD).
 - React 19 + React Router v7 in SSR mode (`react-router.config.ts`).
 - Chakra UI v3 + Emotion; forced-light via Chakra props/system tokens (no color-mode toggle).
 - MobX + `mobx-react-lite` and the `src/shared/lib/DIContainer` infrastructure are
-  present from PR1 but NOT yet wired into the presentational prototype, which uses
-  local component state (`useState`) only — no view models yet.
+  available for GraphQL-backed live state. The current prototype still contains
+  presentational/static areas, but new live admin state must go through services
+  and view models rather than direct component-owned IO.
 - `@xyflow/react` for run-progress graphs, isolated to `*.client.tsx` modules.
 - Vite 7 build; Vitest for unit tests; ESLint + Prettier + Steiger (FSD) gates.
+- Package manager is pnpm 11.5.2. Do not reintroduce `package-lock.json`.
 
 ## Layout (FSD)
 
@@ -36,6 +38,9 @@ src/
     # so these shared leaves drop to the lower features/ layer.
     # RunProgressGraph/RoutePreviewGraph/PipelineGraph are xyflow DAGs (*.client.tsx).
   shared/
+    api/                   GraphQL transport/client code and system API services
+      graphql/
+      system/
     lib/                   DIContainer, hooks (useViewModel/useService/useHydrated)
     ui/                    Theme, status tokens, presentational atoms, Toaster
     fixtures/              Static prototype data modeled on the control-plane schema
@@ -52,10 +57,20 @@ SSR-safe placeholder and mounts the `.client` module after hydration. Never impo
 a `.client` module from a route loader or any server-reachable module. See
 `docs/adr/0001-ssr-engine-and-client-only-graphs.md`.
 
+## Backend boundary
+
+Use GraphQL over same-origin `/graphql`.
+
+- Local dev: Vite proxies `/graphql` HTTP and WS to the `revo serve` host.
+- Production embedding: `@revisium/orchestrator` owns the HTTP server, mounts
+  GraphQL first, then mounts the React Router SSR admin fallback.
+- Do not import `@revisium/client` or use Revisium/DBOS storage APIs from this
+  app. The admin talks to the orchestrator GraphQL front door only.
+
 ## Source of truth (order)
 
 1. `docs/adr/` — architecture decisions.
 2. `VERIFICATION.md` — gate commands.
 3. `REVIEW.md` — review policy.
 4. This file — structure and conventions.
-5. Workspace `./agents` — canonical roles, pipelines, method.
+5. Workspace `../agent-playbook` — canonical roles, pipelines, method.

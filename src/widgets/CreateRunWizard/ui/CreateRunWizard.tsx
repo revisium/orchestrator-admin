@@ -76,7 +76,7 @@ const RepoStep = () => (
       <Text textStyle="medium-sm" color="text.2">
         Repository
       </Text>
-      <Input defaultValue="revisium/agent-orchestrator-admin" bg="neutral.0" borderColor="neutral.300" />
+      <Input defaultValue="revisium/orchestrator-admin" bg="neutral.0" borderColor="neutral.300" />
       <Text textStyle="regular-xs" color="text.3">
         Validated via validate_repository + get_repository_context (mock).
       </Text>

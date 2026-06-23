@@ -3,7 +3,7 @@ import { container } from 'src/shared/lib'
 
 interface ViewModelLifecycle {
   setup?: (...args: any[]) => void
-  mount?: (...args: any[]) => void
+  mount?: (...args: any[]) => void | Promise<void>
   unmount?: () => void
 }
 

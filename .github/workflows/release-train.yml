@@ -44,8 +44,8 @@ jobs:
       dry_run: ${{ inputs.dry_run }}
       base_branch: master
       node_version: 24.11.1
-      package_manager: npm
-      install_command: 'npm ci'
-      validate_command: 'npm run verify'
+      package_manager: pnpm
+      install_command: corepack enable && pnpm install --frozen-lockfile
+      validate_command: pnpm run verify
     secrets:
       RELEASE_BOT_PRIVATE_KEY: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}

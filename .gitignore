@@ -5,6 +5,11 @@ coverage/
 .react-router/
 .sonar/
 .scannerwork/
+.revo/
+.env.local
+.env.*.local
+.env/.env.local
+.env/.env.*.local
 .env.sonar
 *.log
 .DS_Store

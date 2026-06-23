@@ -6,7 +6,7 @@ export const TASK_RUNS: ReadonlyArray<TaskRun> = [
     title: 'Add release-train workflow to orchestrator-admin',
     description: 'Wire a GitHub Actions release train with semantic version bumps and changelog generation.',
     status: 'running',
-    repos: ['revisium/agent-orchestrator-admin'],
+    repos: ['revisium/orchestrator-admin'],
     scope: 'ci',
     priority: 'high',
     createdBy: 'kap',
@@ -103,7 +103,7 @@ export const RUN_EVENTS: ReadonlyArray<RunEvent> = [
     type: 'run.created',
     actor: 'kap',
     createdAt: '2026-06-13T09:12:00Z',
-    payloadSummary: 'title="Add release-train workflow", repos=[agent-orchestrator-admin]',
+    payloadSummary: 'title="Add release-train workflow", repos=[orchestrator-admin]',
   },
   {
     id: 'evt_002',

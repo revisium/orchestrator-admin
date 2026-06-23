@@ -1,8 +1,8 @@
-# Review policy: agent-orchestrator-admin
+# Review policy: orchestrator-admin
 
 ## Before review
 
-- `npm run verify` is green locally.
+- `pnpm run verify` is green locally.
 - CI and the SonarCloud quality gate are green on the PR.
 
 ## Review focus
