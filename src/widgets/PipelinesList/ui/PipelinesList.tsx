@@ -13,7 +13,10 @@ interface PipelinesListProps {
 const defaultPipeline = (
   pipelines: ReadonlyArray<PipelineRow>,
   selectedPipelineId: string | undefined,
-): PipelineRow | undefined => pipelines.find((pipeline) => pipeline.id === selectedPipelineId) ?? pipelines[0]
+): PipelineRow | undefined => {
+  if (selectedPipelineId === undefined) return pipelines[0]
+  return pipelines.find((pipeline) => pipeline.id === selectedPipelineId)
+}
 
 const PipelineCard = ({ active, pipeline }: { readonly active: boolean; readonly pipeline: PipelineRow }) => (
   <ChakraLink

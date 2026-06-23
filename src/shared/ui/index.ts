@@ -14,6 +14,7 @@ export { ModelChip } from './ModelChip'
 export { RoleToken } from './RoleToken'
 export { CostMeter } from './CostMeter'
 export { EmptyState } from './EmptyState'
+export { SchemaV2Action } from './SchemaV2Action'
 export { GraphFrame, GraphPlaceholder } from './GraphFrame'
 export { toneForStatus, labelForStatus, type StatusTone } from './statusTone'
 export {

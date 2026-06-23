@@ -47,7 +47,7 @@ export const MethodTabs = ({ active }: MethodTabsProps) => (
           textStyle={selected ? 'semibold-sm' : 'medium-sm'}
           _hover={{ color: 'fg.0', textDecoration: 'none' }}
         >
-          <Link to={tab.to}>
+          <Link to={tab.to} aria-current={selected ? 'page' : undefined}>
             <Text as="span">{tab.label}</Text>
             <Span
               className="mono tnum"
