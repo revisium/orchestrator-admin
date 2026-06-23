@@ -1,72 +1,42 @@
-import { Stack, Text } from '@chakra-ui/react'
-import { AccentBadge, Card, FieldRow, PageHeader, SectionHeading, TagList } from 'src/shared/ui'
-import { pipelineById } from 'src/shared/fixtures'
-import { PipelineGraph } from 'src/features/PipelineGraph'
+import { Button, Stack } from '@chakra-ui/react'
+import { BookOpen } from 'lucide-react'
+import { MethodTabs } from 'src/features/MethodTabs'
+import { PIPELINES } from 'src/shared/fixtures'
+import { PageHeader } from 'src/shared/ui'
+import { PipelinesList } from 'src/widgets/PipelinesList'
 
 interface MethodPipelineDetailPageProps {
   readonly pipelineId: string
 }
 
-export const MethodPipelineDetailPage = ({ pipelineId }: MethodPipelineDetailPageProps) => {
-  const pipeline = pipelineById(pipelineId)
+const Actions = (
+  <Button
+    size="sm"
+    h="34px"
+    px="3.5"
+    gap="2"
+    bg="bg.1"
+    color="fg.0"
+    borderWidth="1px"
+    borderColor="border.strong"
+    borderRadius="btn"
+    disabled
+    _disabled={{ opacity: 0.58, cursor: 'not-allowed' }}
+  >
+    <BookOpen size={14} />
+    Schema v2
+  </Button>
+)
 
-  return (
-    <Stack gap="6">
-      <PageHeader
-        eyebrow="Pipeline"
-        title={pipeline.pipelineId}
-        description="Pipeline route: roles, gates, and alternatives."
-      />
-      <Card>
-        <Stack gap="1">
-          <FieldRow label="Triggers">
-            <TagList items={pipeline.triggers} />
-          </FieldRow>
-          <FieldRow label="Required roles">
-            <TagList items={pipeline.requiredRoles} />
-          </FieldRow>
-          <FieldRow label="Optional roles">
-            <TagList items={pipeline.optionalRoles} />
-          </FieldRow>
-          <FieldRow label="Route gates">
-            {pipeline.routeGates.length === 0 ? (
-              <Text textStyle="regular-sm" color="text.4">
-                —
-              </Text>
-            ) : (
-              <Stack direction="row" gap="2">
-                {pipeline.routeGates.map((gate) => (
-                  <AccentBadge key={gate} kind="gate">
-                    {gate.replaceAll('_', ' ')}
-                  </AccentBadge>
-                ))}
-              </Stack>
-            )}
-          </FieldRow>
-          <FieldRow label="Alternatives">
-            {pipeline.alternativeRoles.length === 0 ? (
-              <Text textStyle="regular-sm" color="text.4">
-                none
-              </Text>
-            ) : (
-              <Stack gap="1">
-                {pipeline.alternativeRoles.map((alt) => (
-                  <Text key={alt.role} textStyle="regular-sm" color="text.2">
-                    {alt.role} → {alt.alternative}
-                  </Text>
-                ))}
-              </Stack>
-            )}
-          </FieldRow>
-        </Stack>
-      </Card>
-      <Stack gap="3">
-        <SectionHeading>Route graph</SectionHeading>
-        <Text textStyle="regular-sm" color="text.3">
-          Ordered roles and gates. Dashed nodes are optional; alternatives are annotated inline.
-        </Text>
-        <PipelineGraph />
-      </Stack>
-    </Stack>
-  )
-}
+export const MethodPipelineDetailPage = ({ pipelineId }: MethodPipelineDetailPageProps) => (
+  <Stack gap="6">
+    <PageHeader
+      eyebrow="The method"
+      title="Method"
+      description="Typed, versioned definitions that govern every run — pipelines, roles, and installed playbooks."
+      actions={Actions}
+    />
+    <MethodTabs active="pipelines" />
+    <PipelinesList pipelines={PIPELINES} selectedPipelineId={pipelineId} />
+  </Stack>
+)
