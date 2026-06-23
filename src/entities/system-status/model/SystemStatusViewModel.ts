@@ -1,5 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx'
-import { container } from 'src/shared/lib'
+import { container } from 'src/shared/lib/DIContainer'
 import { SystemHealthViewModel } from './SystemHealthViewModel'
 import { SystemStatusService } from './SystemStatusService'
 import type { SystemHostStat, SystemStatusLoadState, SystemStatusTone } from './types'

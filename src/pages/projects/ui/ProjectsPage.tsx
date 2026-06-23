@@ -234,7 +234,17 @@ const Eyebrow = (
 )
 
 const Actions = (
-  <Button size="sm" h="36px" px="3.5" gap="2" bg="brand.500" color="brand.on" _hover={{ bg: 'brand.hover' }}>
+  <Button
+    size="sm"
+    h="36px"
+    px="3.5"
+    gap="2"
+    bg="brand.500"
+    color="brand.on"
+    disabled
+    _hover={{ bg: 'brand.hover' }}
+    _disabled={{ opacity: 0.58, cursor: 'not-allowed' }}
+  >
     <Plus size={15} />
     New project
   </Button>

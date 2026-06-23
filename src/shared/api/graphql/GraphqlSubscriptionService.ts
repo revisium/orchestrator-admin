@@ -1,6 +1,6 @@
 import { print, type DocumentNode } from 'graphql'
 import { createClient, type Client, type ClientOptions } from 'graphql-ws'
-import { container } from 'src/shared/lib'
+import { container } from 'src/shared/lib/DIContainer'
 import { resolveGraphqlWsUrl } from './endpoints'
 
 interface GraphqlSubscriptionServiceOptions {

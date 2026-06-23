@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { container } from 'src/shared/lib'
+import { container } from '../DIContainer'
 
 export const useService = <T>(Class: new (...args: any[]) => T) => {
   const instanceRef = useRef<T | null>(null)

@@ -144,8 +144,8 @@ export const PROJECT_REPOSITORIES: ReadonlyArray<ProjectRepository> = [
 export const reposForProject = (projectId: string): ReadonlyArray<ProjectRepository> =>
   PROJECT_REPOSITORIES.filter((repo) => repo.projectId === projectId)
 
-export const projectById = (projectId: string): ProjectRow =>
-  PROJECTS.find((project) => project.id === projectId) ?? PROJECTS[0]
+export const projectById = (projectId: string): ProjectRow | undefined =>
+  PROJECTS.find((project) => project.id === projectId)
 
 export const RUN_PROJECT: Record<string, string> = {
   run_8f2a: 'prj_orch',

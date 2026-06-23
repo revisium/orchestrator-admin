@@ -61,7 +61,7 @@ const ADR_LINKED_COUNTS: Readonly<Record<number, number>> = {
   2: 1,
   9: 1,
 }
-const ADR_ROW_HOVER_BG = '#fff1ec'
+const ADR_ROW_HOVER_BG = 'brand.tint'
 
 const projectToneStyles = (
   tone: ProjectTone,
@@ -180,8 +180,10 @@ const FlexHeader = ({ project }: { readonly project: ProjectRow }) => (
         borderWidth="1px"
         borderColor="border.strong"
         borderRadius="btn"
-        boxShadow="0 1px 2px rgba(33, 28, 20, 0.08)"
+        boxShadow="sh-1"
+        disabled
         _hover={{ bg: 'blackAlpha.50' }}
+        _disabled={{ opacity: 0.58, cursor: 'not-allowed' }}
       >
         <Plus size={14} />
         New ADR
@@ -231,7 +233,7 @@ const DetailTabs = ({
         >
           <Link to={to}>
             {tab.label}
-            {tab.count ? (
+            {tab.count !== undefined ? (
               <Span
                 className="mono tnum"
                 minW="5"
@@ -1245,8 +1247,10 @@ const KnowledgeTab = ({
         borderWidth="1px"
         borderColor="border.strong"
         borderRadius="btn"
-        boxShadow="0 1px 2px rgba(33, 28, 20, 0.08)"
+        boxShadow="sh-1"
+        disabled
         _hover={{ bg: 'blackAlpha.50' }}
+        _disabled={{ opacity: 0.58, cursor: 'not-allowed' }}
       >
         <Plus size={14} />
         New article
@@ -1487,6 +1491,10 @@ const AdrDetail = ({ project, adr }: { readonly project: ProjectRow; readonly ad
 
 export const ProjectAdrDetailPage = ({ projectId, adrId }: ProjectAdrDetailPageProps) => {
   const project = projectById(projectId)
+  if (!project) {
+    return <EmptyState title="Project not found" description="The requested project does not exist." />
+  }
+
   const repositories = reposForProject(project.id)
   const adrs = adrsForProject(project.id)
   const tabs = tabsForProject(project, repositories)
@@ -1507,6 +1515,10 @@ export const ProjectAdrDetailPage = ({ projectId, adrId }: ProjectAdrDetailPageP
 
 export const ProjectDetailPage = ({ projectId, tab }: ProjectDetailPageProps) => {
   const project = projectById(projectId)
+  if (!project) {
+    return <EmptyState title="Project not found" description="The requested project does not exist." />
+  }
+
   const repositories = reposForProject(project.id)
   const adrs = adrsForProject(project.id)
   const articles = knowledgeForProject(project.id)

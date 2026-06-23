@@ -1,6 +1,6 @@
 import type { SystemDoctorQuery, SystemStatusQuery } from 'src/__generated__/graphql-request'
 import { GraphqlService } from 'src/shared/api'
-import { container } from 'src/shared/lib'
+import { container } from 'src/shared/lib/DIContainer'
 
 export class SystemStatusService {
   public constructor(private readonly graphqlService: GraphqlService = container.get(GraphqlService)) {}

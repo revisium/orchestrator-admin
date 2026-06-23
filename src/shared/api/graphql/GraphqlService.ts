@@ -1,6 +1,6 @@
 import { GraphQLClient, type RequestDocument, type Variables } from 'graphql-request'
 import { getSdk, type Sdk } from 'src/__generated__/graphql-request'
-import { container } from 'src/shared/lib'
+import { container } from 'src/shared/lib/DIContainer'
 import { resolveGraphqlHttpUrl } from './endpoints'
 
 interface GraphqlServiceOptions {

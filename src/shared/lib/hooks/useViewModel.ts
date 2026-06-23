@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { container } from 'src/shared/lib'
+import { container } from '../DIContainer'
 
 interface ViewModelLifecycle {
   setup?: (...args: any[]) => void

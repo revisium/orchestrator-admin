@@ -32,10 +32,13 @@ import {
   Search,
   X,
 } from 'lucide-react'
+import { observer } from 'mobx-react-lite'
 import { useState, type ReactNode } from 'react'
-import { Link, Outlet, useLocation } from 'react-router'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router'
 import { HOST_STATUS, INBOX_ITEMS, adrsForProject, projectById } from 'src/shared/fixtures'
+import { useViewModel } from 'src/shared/lib'
 import { BrandLogo } from 'src/shared/ui'
+import { ProjectSwitcherViewModel, type LayoutProjectTone } from '../model/ProjectSwitcherViewModel'
 
 interface NavItem {
   readonly label: string
@@ -68,12 +71,6 @@ const NAV_ITEMS: ReadonlyArray<NavItem> = [
   { label: 'Method', to: '/method/roles', match: '/method', icon: Scan },
 ]
 
-const PROJECT_ITEMS = [
-  { id: 'orchestrator', label: 'Orchestrator', initials: 'or', tone: 'failed' },
-  { id: 'schema', label: 'Schema Platform', initials: 'sc', tone: 'role' },
-  { id: 'strategy', label: 'Strategy & Docs', initials: 'st', tone: 'waiting' },
-] as const
-
 const isActive = (pathname: string, match: string): boolean =>
   match === '/' ? pathname === '/' : pathname === match || pathname.startsWith(`${match}/`)
 
@@ -104,6 +101,8 @@ const projectBreadcrumbs = (segments: ReadonlyArray<string>): ReadonlyArray<Brea
   if (!projectId) return [{ label: 'Projects' }]
 
   const project = projectById(projectId)
+  if (!project) return [{ label: 'Projects', to: '/projects' }, { label: projectId }]
+
   const crumbs: Array<BreadcrumbItem> = [
     { label: 'Projects', to: '/projects' },
     { label: project.name, to: `/projects/${project.id}` },
@@ -166,7 +165,7 @@ const ProjectAvatar = ({
   size = '26px',
 }: {
   readonly initials: string
-  readonly tone: 'all' | 'failed' | 'role' | 'waiting' | 'system'
+  readonly tone: LayoutProjectTone
   readonly size?: string
 }) => {
   if (tone === 'all' || tone === 'system') {
@@ -236,9 +235,14 @@ const ProjectMenuRow = ({
   </Menu.Item>
 )
 
-const ProjectSwitcher = ({ collapsed }: { readonly collapsed: boolean }) => {
-  const [projectId, setProjectId] = useState('all')
-  const allProjectsSelected = projectId === 'all'
+const ProjectSwitcher = observer(({ collapsed }: { readonly collapsed: boolean }) => {
+  const navigate = useNavigate()
+  const switcher = useViewModel(ProjectSwitcherViewModel)
+
+  const selectProject = (projectId: string, to: string): void => {
+    switcher.selectProject(projectId)
+    navigate(to)
+  }
 
   return (
     <Menu.Root positioning={{ placement: 'bottom-start' }}>
@@ -260,15 +264,15 @@ const ProjectSwitcher = ({ collapsed }: { readonly collapsed: boolean }) => {
             _expanded={{ bg: 'bg.2', borderColor: 'border.strong', boxShadow: 'sh-glow' }}
             title={collapsed ? 'Switch project' : undefined}
           >
-            <ProjectAvatar initials="all" tone="all" />
+            <ProjectAvatar initials={switcher.selectedInitials} tone={switcher.selectedTone} />
             {collapsed ? null : (
               <>
                 <Stack gap="0" flex="1" minW="0" align="flex-start">
                   <Text textStyle="semibold-sm" color="fg.0" truncate>
-                    All projects
+                    {switcher.selectedLabel}
                   </Text>
                   <Text className="mono" textStyle="regular-xs" color="fg.3" truncate>
-                    agent-orchestration
+                    {switcher.selectedMeta}
                   </Text>
                 </Stack>
                 <Box color="fg.3" flexShrink="0">
@@ -302,29 +306,33 @@ const ProjectSwitcher = ({ collapsed }: { readonly collapsed: boolean }) => {
             >
               Workspace · agent-orchestration
             </Text>
-            <ProjectMenuRow value="all" active={allProjectsSelected} onSelect={() => setProjectId('all')}>
+            <ProjectMenuRow
+              value="all"
+              active={switcher.allProjectsSelected}
+              onSelect={() => selectProject('all', '/projects')}
+            >
               <ProjectAvatar initials="all" tone="all" size="22px" />
               <Text flex="1" textStyle="semibold-sm" color="fg.0">
                 All projects
               </Text>
-              {allProjectsSelected ? (
+              {switcher.allProjectsSelected ? (
                 <Box color="brand.500">
                   <Check size={15} />
                 </Box>
               ) : null}
             </ProjectMenuRow>
-            {PROJECT_ITEMS.map((project) => (
+            {switcher.projects.map((project) => (
               <ProjectMenuRow
                 key={project.id}
                 value={project.id}
-                active={projectId === project.id}
-                onSelect={() => setProjectId(project.id)}
+                active={switcher.selectedProjectId === project.id}
+                onSelect={() => selectProject(project.id, `/projects/${project.id}`)}
               >
                 <ProjectAvatar initials={project.initials} tone={project.tone} size="22px" />
                 <Text flex="1" textStyle="semibold-sm" color="fg.0">
                   {project.label}
                 </Text>
-                {projectId === project.id ? (
+                {switcher.selectedProjectId === project.id ? (
                   <Box color="brand.500">
                     <Check size={15} />
                   </Box>
@@ -332,7 +340,7 @@ const ProjectSwitcher = ({ collapsed }: { readonly collapsed: boolean }) => {
               </ProjectMenuRow>
             ))}
             <Box h="1px" bg="border.subtle" mx="1" my="1.5" />
-            <ProjectMenuRow value="control-plane">
+            <ProjectMenuRow value="control-plane" onSelect={() => selectProject('control-plane', '/method/roles')}>
               <ProjectAvatar initials="sys" tone="system" size="22px" />
               <Stack gap="0" flex="1" minW="0">
                 <Text textStyle="semibold-sm" color="fg.0">
@@ -356,7 +364,7 @@ const ProjectSwitcher = ({ collapsed }: { readonly collapsed: boolean }) => {
                 <ArrowRight size={14} />
               </Box>
             </ProjectMenuRow>
-            <ProjectMenuRow value="browse-projects">
+            <ProjectMenuRow value="browse-projects" onSelect={() => selectProject('all', '/projects')}>
               <Plus size={15} />
               <Text flex="1" textStyle="semibold-sm" color="fg.0">
                 Browse all projects
@@ -367,7 +375,7 @@ const ProjectSwitcher = ({ collapsed }: { readonly collapsed: boolean }) => {
       </Portal>
     </Menu.Root>
   )
-}
+})
 
 const Avatar = () => (
   <Center
